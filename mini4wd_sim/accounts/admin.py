@@ -10,6 +10,7 @@ from .models.user_model import User
 class UserAdmin(DjangoUserAdmin):
     model = User
     list_display = ("user_id", "name", "rate", "en", "tickets", "is_staff")
+    list_display_links = ("name",)
     search_fields = ("name",)
     ordering = ("user_id",)
     fieldsets = (
