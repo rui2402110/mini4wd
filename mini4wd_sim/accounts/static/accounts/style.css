@@ -1,0 +1,135 @@
+/* accounts/static/accounts/style.css ── ログイン・メニュー・部屋探し画面 共通スタイル
+   race.html/garage.html/rankings.html で使う既存 style.css とトーンを合わせた
+   ダークネオン基調の共通デザイン。 */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: #08080e;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+a { color: inherit; text-decoration: none; }
+
+#header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 20px;
+    border-bottom: 1px solid #1a2a1a;
+    background: #0b0b10;
+    flex-shrink: 0;
+}
+
+#title {
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 5px;
+    color: #00ff88;
+    text-shadow: 0 0 10px #00ff8855;
+}
+#title span { color: #0099ff; text-shadow: 0 0 10px #0099ff55; }
+#title small { font-size: 10px; color: #334; letter-spacing: 2px; margin-left: 8px; }
+
+.btn {
+    padding: 9px 26px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    border: 2px solid #00ff88;
+    background: transparent;
+    color: #00ff88;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: inline-block;
+}
+.btn:hover { background: #00ff8820; box-shadow: 0 0 14px #00ff8840; }
+.btn.alt { border-color: #0099ff; color: #0099ff; }
+.btn.alt:hover { background: #0099ff20; box-shadow: 0 0 14px #0099ff40; }
+.btn.danger { border-color: #ff3366; color: #ff3366; }
+.btn.danger:hover { background: #ff336620; box-shadow: 0 0 14px #ff336640; }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+#main-center {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.card {
+    width: 380px;
+    max-width: 92vw;
+    background: #0e0e16;
+    border: 1px solid #1a2a1a;
+    padding: 32px 28px;
+    box-shadow: 0 0 40px #00000080;
+}
+
+.card h2 {
+    font-size: 16px;
+    letter-spacing: 3px;
+    color: #00ff88;
+    margin-bottom: 22px;
+    text-align: center;
+}
+
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 11px; letter-spacing: 1px; color: #667; margin-bottom: 6px; }
+.field input[type="text"], .field input[type="password"] {
+    width: 100%;
+    padding: 10px 12px;
+    background: #050508;
+    border: 1px solid #223;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+}
+.field input:focus { outline: none; border-color: #00ff88; }
+
+.error-text { color: #ff5566; font-size: 12px; margin-bottom: 14px; }
+.hint-text { color: #556; font-size: 11px; margin-top: 18px; line-height: 1.6; }
+
+.submit-row { margin-top: 22px; }
+.submit-row .btn { width: 100%; text-align: center; }
+
+.bonus-badge {
+    margin: 18px 0;
+    padding: 12px;
+    border: 1px dashed #ffdd33;
+    color: #ffdd33;
+    text-align: center;
+    font-size: 13px;
+    letter-spacing: 1px;
+}
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+    margin-top: 26px;
+}
+.menu-tile {
+    padding: 26px 14px;
+    text-align: center;
+    border: 2px solid #223;
+    background: #0e0e16;
+    letter-spacing: 2px;
+    font-size: 13px;
+    transition: all 0.18s;
+}
+.menu-tile:hover { border-color: #00ff88; box-shadow: 0 0 18px #00ff8830; color: #00ff88; }
+
+.stat-row { display: flex; gap: 18px; justify-content: center; margin-top: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.stat-chip {
+    padding: 6px 14px;
+    border: 1px solid #223;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+.stat-chip b { color: #00ff88; }

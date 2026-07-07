@@ -1,0 +1,48 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ショップ - ミニ四駆シミュレーター</title>
+    <link rel="stylesheet" href="{% static 'garage/style.css' %}">
+    <link rel="stylesheet" href="{% static 'garage/shop.css' %}">
+</head>
+
+<body class="shop">
+    <div id="header">
+        <div id="title">SHOP<small>v1.0</small></div>
+        <div id="shop-header-right">
+            <div id="enBalance">EN: <b id="enBalanceVal">-</b></div>
+            <button id="backBtn">◀ メニューへ戻る</button>
+        </div>
+    </div>
+
+    <div id="shop-main">
+        <div class="shop-section">
+            <h2>COLORS <small>(1件 75,000 en)</small></h2>
+            <div class="shop-grid" id="colorGrid"></div>
+        </div>
+
+        <div class="shop-section">
+            <h2>SKILLS <small>(1件 15,000 en)</small></h2>
+            <div class="shop-grid" id="skillGrid"></div>
+        </div>
+
+        <div class="shop-section">
+            <h2>PRESET SLOT <small>(150,000 en)</small></h2>
+            <div class="shop-grid" id="presetSlotGrid"></div>
+        </div>
+    </div>
+
+    <div id="cart-bar">
+        <div id="cart-summary">選択中: <span id="cartCount">0</span>件 / 合計 <b id="cartTotal">0</b> en</div>
+        <button id="buyBtn" class="btn">まとめて購入する</button>
+    </div>
+
+    <script>window.__SHOP_STATE__ = {{ shop_state_json|safe }};</script>
+    <script src="{% static 'garage/shop.js' %}"></script>
+</body>
+
+</html>

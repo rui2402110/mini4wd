@@ -1,0 +1,89 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ミニ四駆シミュレーター - カスタマイズガレージ v1.4</title>
+    <link rel="stylesheet" href="{% static 'garage/style.css' %}">
+</head>
+
+<body class="garage">
+    <div id="header">
+        <div id="title">CUSTOM<span>IZE</span> GARAGE<small>v1.4</small></div>
+        <button id="backBtn">◀ サーキットへ戻る</button>
+    </div>
+
+    <div id="main">
+        <div id="viewport">
+            <canvas id="threeCanvas"></canvas>
+            <div id="carLabel">
+                <div class="nm" id="carLabelName">HAPPY-TURN</div>
+                <div class="sub">MACHINE PREVIEW</div>
+            </div>
+            <div id="dragHint">DRAG TO ROTATE</div>
+        </div>
+
+        <div id="sidebar">
+            <div class="panel-title">MACHINE NAME</div>
+            <div class="name-input-row">
+                <input type="text" id="machineNameInput" value="HAPPY-TURN" maxlength="16" placeholder="ENTER NAME">
+                <button id="btnRandomName">RANDOM</button>
+            </div>
+            <div class="warning-text">※半角英数字・記号のみ入力可能です（日本語入力不可）。</div>
+
+            <div class="panel-title">STRATEGY TYPE</div>
+            <div class="machine-row">
+                <button class="machine-btn active" id="btnEscape" data-type="ESCAPE">逃げ切り</button>
+                <button class="machine-btn" id="btnBalanced" data-type="BALANCED">中盤重視</button>
+                <button class="machine-btn" id="btnCloser" data-type="CLOSER">追い込み</button>
+            </div>
+            <div id="strategyDesc" class="desc-box"></div>
+
+            <div class="panel-title">EQUIP SKILL</div>
+            <div class="skill-role-label role-main">★ MAIN（常時全力）</div>
+            <select id="skillSelectMain" class="skill-select"></select>
+            <div id="skillDescMain" class="desc-box"></div>
+
+            <div class="skill-role-label role-sub">▽ SUB 1（効果-50%）</div>
+            <select id="skillSelectSub1" class="skill-select"></select>
+            <div id="skillDescSub1" class="desc-box"></div>
+
+            <div class="skill-role-label role-sub">▽ SUB 2（効果-50%）</div>
+            <select id="skillSelectSub2" class="skill-select"></select>
+            <div id="skillDescSub2" class="desc-box"></div>
+
+            <div class="panel-title">PRESET</div>
+            <div class="preset-grid" id="presetGrid"></div>
+            <div class="preset-note">
+                ※空きスロットをクリックすると現在の設定を保存します（サーバーに保存されます）。<br>
+                保存済みスロットをクリックすると設定を読み込み、そのまま装備状態になります（右上の×で削除）。<br>
+                5枠目以降はショップで購入すると解放されます。
+            </div>
+
+            <div class="panel-title">COLOR 1 (BODY)</div>
+            <div class="swatch-grid" id="swatchBody"></div>
+
+            <div class="panel-title">COLOR 2 (ACCENT)</div>
+            <div class="swatch-grid" id="swatchAccent"></div>
+
+            <div class="panel-title">COLOR 3 (MARK)</div>
+            <div class="swatch-grid" id="swatchMark"></div>
+
+            <div class="note">
+                ※所持していないカラー・スキルはショップで購入することで選択可能になります。
+            </div>
+        </div>
+    </div>
+
+    <script>window.__GARAGE_STATE__ = {{ garage_state_json|safe }};</script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="{% static 'garage/data.js' %}"></script>
+    <script src="{% static 'garage/car_view.js' %}"></script>
+    <script src="{% static 'garage/garage.js' %}"></script>
+    <script src="{% static 'garage/garage_online.js' %}"></script>
+</body>
+
+</html>

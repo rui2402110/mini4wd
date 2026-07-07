@@ -1,0 +1,24 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログアウトしました - ミニ四駆シミュレーター</title>
+    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+</head>
+<body>
+    <div id="header">
+        <div id="title">MINI<span>4WD</span> SIMULATOR<small>v1.3</small></div>
+    </div>
+    <div id="main-center">
+        <div class="card">
+            <h2>ログアウトしました</h2>
+            <p class="hint-text">またのプレイをお待ちしております。</p>
+            <div class="submit-row">
+                <a class="btn" style="text-align:center;" href="{% url 'accounts:login' %}">再度ログインする ▶</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

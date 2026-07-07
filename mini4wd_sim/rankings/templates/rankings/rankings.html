@@ -1,0 +1,77 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ミニ四駆シミュレーター - レートランキング v1.1</title>
+    <link rel="stylesheet" href="{% static 'rankings/style.css' %}">
+</head>
+
+<body class="rankings">
+    <div id="header">
+        <div id="title">RATE<span> RANKING</span><small>v1.1</small></div>
+        <button id="backBtn">◀ サーキットへ戻る</button>
+    </div>
+
+    <div id="main">
+        <div id="ranking-panel">
+            <div class="panel-heading">
+                <span>RANK / MACHINE</span>
+                <span>RATE</span>
+            </div>
+            <div id="own-pin-wrap">
+                <div class="own-pin-label">◆ あなたの現在の順位（常時表示）</div>
+                <div id="own-pin"></div>
+            </div>
+            <div id="ranking-scroll"></div>
+            <div id="pagination">
+                <button class="page-btn" id="prevBtn">◀ 前へ</button>
+                <div id="pageIndicator">1 / 1</div>
+                <button class="page-btn" id="nextBtn">次へ ▶</button>
+            </div>
+        </div>
+
+        <div id="preview-panel">
+            <canvas id="threeCanvas"></canvas>
+            <div id="carLabel">
+                <div class="nm" id="carLabelName">-</div>
+                <div class="sub" id="carLabelSub">MACHINE PREVIEW</div>
+            </div>
+            <div id="previewInfo">
+                <div class="info-block">
+                    <div class="info-label">PLAYER</div>
+                    <div class="info-val" id="infoPlayer">-</div>
+                </div>
+                <div class="info-block">
+                    <div class="info-label">TYPE</div>
+                    <div class="info-val" id="infoType">-</div>
+                </div>
+                <div class="info-block">
+                    <div class="info-label">EQUIP SKILL</div>
+                    <div class="info-val" id="infoSkill">-</div>
+                </div>
+                <div class="info-block">
+                    <div class="info-label">SUB SKILLS</div>
+                    <div class="info-val" id="infoSubSkills">-</div>
+                </div>
+                <div class="info-block">
+                    <div class="info-label">RATE</div>
+                    <div class="info-val" id="infoRate">-</div>
+                </div>
+            </div>
+            <div id="dragHint">DRAG TO ROTATE / DOUBLE CLICK TO AUTO ROTATE</div>
+        </div>
+    </div>
+
+    <script>window.__RANKING_DATA__ = {{ ranking_data_json|safe }};</script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="{% static 'rankings/data.js' %}"></script>
+    <script src="{% static 'rankings/rankings_online.js' %}"></script>
+    <script src="{% static 'rankings/car_view.js' %}"></script>
+    <script src="{% static 'rankings/rankings.js' %}"></script>
+</body>
+
+</html>

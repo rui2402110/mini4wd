@@ -1,0 +1,20 @@
+/* rooms/static/rooms/lobby.css ── 部屋ロビー画面専用スタイル */
+#lobby-main { flex: 1; display: grid; grid-template-columns: 240px 1fr 280px; gap: 16px; padding: 20px; }
+#member-panel, #chat-panel { background: #0e0e16; border: 1px solid #1a2a1a; padding: 14px; overflow-y: auto; }
+#member-panel h3 { font-size: 12px; color: #0099ff; letter-spacing: 1px; margin: 12px 0 8px; display: flex; justify-content: space-between; align-items: center; }
+.btn.small { padding: 4px 10px; font-size: 10px; }
+.member-item, .bot-item { display: flex; justify-content: space-between; padding: 6px 8px; border: 1px solid #223; margin-bottom: 6px; font-size: 12px; }
+.member-item.ready { border-color: #00ff88; color: #00ff88; }
+.bot-item .rm { color: #ff5566; cursor: pointer; }
+
+#lobby-center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; background: #0e0e16; border: 1px solid #1a2a1a; }
+#myBetRow { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+#myBetRow label { font-size: 11px; color: #667; }
+#readyRow { display: flex; gap: 12px; }
+#statusLine { font-size: 12px; color: #556; }
+
+#chatFeed { height: calc(100% - 50px); overflow-y: auto; font-size: 12px; margin-bottom: 8px; }
+#chatFeed .msg { margin-bottom: 6px; }
+#chatFeed .msg .nm { color: #0099ff; font-weight: bold; }
+#chatInputRow { display: flex; gap: 6px; }
+#chatInputRow input { flex: 1; padding: 8px; background: #050508; border: 1px solid #223; color: #e0e0e0; font-family: 'Courier New', monospace; }

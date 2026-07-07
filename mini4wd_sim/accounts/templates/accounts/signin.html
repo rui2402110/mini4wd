@@ -1,0 +1,43 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アカウント作成完了 - ミニ四駆シミュレーター</title>
+    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+</head>
+<body>
+    <div id="header">
+        <div id="title">MINI<span>4WD</span> SIMULATOR<small>v1.3</small></div>
+    </div>
+    <div id="main-center">
+        <div class="card">
+            {% if is_new_account %}
+                <h2>アカウントを作成しました</h2>
+                <p class="hint-text">
+                    ようこそ、<b style="color:#00ff88">{{ user.name }}</b> さん！<br>
+                    新しいミニ四駆アカウントが作成されました。
+                </p>
+            {% else %}
+                <h2>おかえりなさい</h2>
+                <p class="hint-text"><b style="color:#00ff88">{{ user.name }}</b> さん、ログインしました。</p>
+            {% endif %}
+
+            {% if bonus_en > 0 %}
+                <div class="bonus-badge">🎁 ログインボーナス +{{ bonus_en }} en 獲得！</div>
+            {% endif %}
+
+            <div class="stat-row">
+                <div class="stat-chip">RATE <b>{{ user.rate }}</b></div>
+                <div class="stat-chip">EN <b>{{ user.en }}</b></div>
+                <div class="stat-chip">TICKETS <b>{{ user.tickets }}</b></div>
+            </div>
+
+            <div class="submit-row">
+                <a class="btn" style="text-align:center;" href="{% url 'menu:index' %}">メニューへ進む ▶</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

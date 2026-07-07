@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン - ミニ四駆シミュレーター</title>
+    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+</head>
+<body>
+    <div id="header">
+        <div id="title">MINI<span>4WD</span> SIMULATOR<small>v1.3</small></div>
+    </div>
+    <div id="main-center">
+        <div class="card">
+            <h2>LOGIN</h2>
+            {% if error %}<div class="error-text">{{ error }}</div>{% endif %}
+            <form method="post">
+                {% csrf_token %}
+                <div class="field">
+                    <label for="id_name">ユーザー名（半角英数字・32字以下）</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<div class="error-text">{{ form.name.errors|join:" " }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="id_password">パスワード</label>
+                    {{ form.password }}
+                </div>
+                <div class="submit-row">
+                    <button type="submit" class="btn">ログイン / 新規作成</button>
+                </div>
+            </form>
+            <p class="hint-text">
+                ※未登録のユーザー名でログインすると、そのまま新しいアカウントが作成されます。<br>
+                既存のユーザー名の場合はパスワードが照合されます。
+            </p>
+        </div>
+    </div>
+</body>
+</html>

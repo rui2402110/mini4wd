@@ -1,0 +1,35 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メニュー - ミニ四駆シミュレーター</title>
+    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+</head>
+<body>
+    <div id="header">
+        <div id="title">MINI<span>4WD</span> SIMULATOR<small>v1.3</small></div>
+        <button class="btn danger" id="logoutBtn">LOGOUT</button>
+    </div>
+    <div id="main-center">
+        <div class="card" style="width:460px;">
+            <h2>MENU</h2>
+            <div class="stat-row">
+                <div class="stat-chip">{{ user.name }}</div>
+                <div class="stat-chip">RATE <b>{{ user.rate }}</b></div>
+                <div class="stat-chip">EN <b>{{ user.en }}</b></div>
+                <div class="stat-chip">TICKETS <b>{{ user.tickets }}</b></div>
+            </div>
+
+            <div class="menu-grid">
+                <a class="menu-tile" href="{% url 'garage:index' %}">🔧<br>GARAGE<br>カスタマイズ</a>
+                <a class="menu-tile" href="{% url 'garage:shop' %}">🛒<br>SHOP<br>ショップ</a>
+                <a class="menu-tile" href="{% url 'rankings:index' %}">🏆<br>RANKING<br>レートランキング</a>
+                <a class="menu-tile" href="{% url 'rooms:index' %}">🚪<br>ROOMS<br>部屋を探す</a>
+            </div>
+        </div>
+    </div>
+    <script src="{% static 'menu/menu.js' %}"></script>
+</body>
+</html>

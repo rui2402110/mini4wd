@@ -1,0 +1,75 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ room.room_name }} - 部屋ロビー</title>
+    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+    <link rel="stylesheet" href="{% static 'rooms/lobby.css' %}">
+</head>
+<body>
+    <div id="header">
+        <div id="title">{{ room.room_name }}<small>ROOM LOBBY</small></div>
+        <button class="btn danger" id="leaveBtn">退室</button>
+    </div>
+
+    {% if need_password %}
+    <div id="main-center">
+        <div class="card">
+            <h2>パスワードが必要です</h2>
+            <form id="pwForm">
+                <div class="field">
+                    <label>部屋パスワード</label>
+                    <input type="password" id="pwInput">
+                </div>
+                <div class="submit-row"><button type="button" class="btn" id="pwSubmit">入室する</button></div>
+            </form>
+        </div>
+    </div>
+    <script>
+        document.getElementById('pwSubmit').addEventListener('click', () => {
+            const pw = document.getElementById('pwInput').value;
+            window.location.href = '?password=' + encodeURIComponent(pw);
+        });
+    </script>
+    {% else %}
+    <div id="lobby-main">
+        <div id="member-panel">
+            <h3>MEMBERS</h3>
+            <div id="memberList"></div>
+            <h3>BOTS <button id="addBotBtn" class="btn alt small">+ Bot追加</button></h3>
+            <div id="botList"></div>
+        </div>
+
+        <div id="lobby-center">
+            <div id="myBetRow">
+                <label>賭け金 (100〜1000 en)</label>
+                <input type="range" id="betSlider" min="100" max="1000" step="50" value="100">
+                <span id="betVal">100</span>
+            </div>
+            <div id="readyRow">
+                <button class="btn" id="readyBtn">準備完了</button>
+                <button class="btn" id="startBtn" style="display:none;">レース開始 ▶</button>
+            </div>
+            <div id="statusLine">接続中...</div>
+        </div>
+
+        <div id="chat-panel">
+            <div id="chatFeed"></div>
+            <div id="chatInputRow">
+                <input type="text" id="chatInput" maxlength="60" placeholder="メッセージ...">
+                <button class="btn alt" id="chatSend">送信</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.__ROOM_ID__ = "{{ room.room_id }}";
+        window.__MY_USER_ID__ = {{ request.user.user_id }};
+        window.__IS_HOST__ = {{ room.host_user_id|default:"0" }} === {{ request.user.user_id }};
+    </script>
+    <script src="{% static 'rooms/rooms.js' %}"></script>
+    {% endif %}
+</body>
+</html>

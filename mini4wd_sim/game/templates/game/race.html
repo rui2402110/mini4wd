@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ミニ四駆シミュレーター - レース画面 v2.8</title>
+    <link rel="stylesheet" href="{% static 'game/style.css' %}">
+</head>
+
+<body class="race">
+    <div id="header">
+        <div id="title">MINI<span>4WD</span> SIMULATOR<small>v2.8</small></div>
+        <div id="controls">
+            <button id="boardBtn">🖥 CASTOM</button>
+            <button id="rankingBtn">🏆 RANKING</button>
+            <button id="resetBtn">RESET</button>
+            <button id="startBtn">START</button>
+        </div>
+    </div>
+
+    <div id="main-layout">
+        <div id="canvas-container">
+            <canvas id="threeCanvas"></canvas>
+            <canvas id="fx-canvas"></canvas>
+            <div id="mud-indicator">◼ MUD ZONE ◼</div>
+
+            <div id="center-hud">
+                <div id="lap-counter">TOTAL LAPS : 5</div>
+                <div id="race-status">READY</div>
+            </div>
+
+            <div id="cam-label">WIDE VIEW</div>
+            <div id="speed-indicator"></div>
+            <div id="corner-indicator">◀ CORNER ▶</div>
+
+            <div id="countdown-overlay">
+                <div id="countdown-num">3</div>
+            </div>
+            <div id="finish-banner">
+                <div class="finish-label">RACE FINISH</div>
+                <div class="finish-winner" id="finish-winner-name">THUNDER</div>
+                <div class="finish-sub">WINS THE RACE!</div>
+                <div class="winner-time" id="finish-time"></div>
+            </div>
+            <div id="zoom-flash"></div>
+        </div>
+
+        <!-- 車体データバッジ：順位順に並び替えて表示するサイドバー（実況パネルの左隣） -->
+        <div id="hud-rankings"></div>
+
+        <!-- 実況パネル -->
+        <div id="commentary-panel">
+            <!-- プレイヤーリスト（賭け金・レート表示） -->
+            <div id="player-list-panel">
+                <div id="player-list-header">
+                    <div class="dot"></div>
+                    PLAYER LIST
+                </div>
+                <div class="player-col-header">
+                    <span>NAME</span><span>RATE</span><span>WIN</span><span>BET</span>
+                </div>
+                <div id="player-list-body"></div>
+            </div>
+
+            <div id="commentary-wrap">
+                <div id="commentary-header">
+                    <div class="dot"></div>
+                    LIVE COMMENTARY
+                </div>
+                <div id="commentary-feed"></div>
+                <div id="chat-area">
+                    <div id="chat-label">PLAYER CHAT</div>
+                    <div id="chat-input-row">
+                        <input type="text" id="chat-input" placeholder="メッセージ..." maxlength="60" />
+                        <button id="chat-send">SEND</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── サーバーから渡されたレース設定（room.current_race_setup）。空の場合はオフラインデモとして動作する ── -->
+    <script>
+        window.__RACE_SETUP__ = {{ race_setup_json|safe }};
+        window.__ROOM_ID__ = {{ room_id|default:"null" }} ? "{{ room_id }}" : null;
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="{% static 'game/data.js' %}"></script>
+    <script src="{% static 'game/race_online.js' %}"></script>
+    <script src="{% static 'game/course.js' %}"></script>
+    <script src="{% static 'game/car_view.js' %}"></script>
+    <script src="{% static 'game/rode_view.js' %}"></script>
+    <script src="{% static 'game/physics.js' %}"></script>
+    <script src="{% static 'game/skills.js' %}"></script>
+    <script src="{% static 'game/particle.js' %}"></script>
+    <script src="{% static 'game/commentary.js' %}"></script>
+    <script src="{% static 'game/game.js' %}"></script>
+</body>
+
+</html>

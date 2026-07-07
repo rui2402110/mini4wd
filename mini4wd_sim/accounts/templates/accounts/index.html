@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ミニ四駆シミュレーター</title>
+    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+</head>
+<body>
+    <div id="header">
+        <div id="title">MINI<span>4WD</span> SIMULATOR<small>v1.3</small></div>
+    </div>
+    <div id="main-center">
+        <div class="card">
+            <h2>ミニ四駆シミュレーターへようこそ</h2>
+            <p class="hint-text" style="margin-bottom:20px;">
+                改造・スキル・賭けを組み込んだミニ四駆オンライン対戦シミュレーターです。<br>
+                パスワードのみでログインでき、未登録の名前は自動で新規アカウントとして作成されます。
+            </p>
+            <div class="submit-row">
+                <button class="btn" id="gotoLoginBtn" data-href="{% url 'accounts:login' %}">ログイン / 新規作成へ進む ▶</button>
+            </div>
+        </div>
+    </div>
+    <script src="{% static 'accounts/index_view.js' %}"></script>
+</body>
+</html>
