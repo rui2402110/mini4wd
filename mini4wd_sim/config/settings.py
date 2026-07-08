@@ -117,7 +117,17 @@ LOGOUT_REDIRECT_URL = "accounts:index"
 REDIS_HOST = os.environ.get("REDIS_HOST")
 REDIS_PORT = int(os.environ.get("REDIS_PORT", "6379"))
 
-if REDIS_HOST:
+# REDIS_HOSTが設定されていても、channels_redisが未インストールの環境では
+# InvalidChannelLayerErrorで落ちてしまう（pip install -r requirements.txt が
+# 未実行/失敗している場合によく起きる）。実際にimportできるかを確認したうえで
+# 使用バックエンドを決定し、開発時に事故らないようにする。
+try:
+    import channels_redis  # noqa: F401
+    _CHANNELS_REDIS_AVAILABLE = True
+except ImportError:
+    _CHANNELS_REDIS_AVAILABLE = False
+
+if REDIS_HOST and _CHANNELS_REDIS_AVAILABLE:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -127,7 +137,14 @@ if REDIS_HOST:
         },
     }
 else:
-    # Redis未設定時の開発用フォールバック（本番では必ずRedisを使用すること）
+    if REDIS_HOST and not _CHANNELS_REDIS_AVAILABLE:
+        print(
+            "[config.settings] 警告: REDIS_HOSTが設定されていますが channels_redis が"
+            " インストールされていないため、InMemoryChannelLayerにフォールバックします。"
+            " `pip install channels_redis` を実行してください。"
+        )
+    # Redis未設定 or channels_redis未インストール時の開発用フォールバック
+    # （本番では必ずRedis + channels_redisを使用すること）
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels.layers.InMemoryChannelLayer",
