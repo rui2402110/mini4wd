@@ -29,6 +29,11 @@ ALLOWED_HOSTS = [
 
 # ── アプリケーション定義 ──
 INSTALLED_APPS = [
+    # daphneを先頭に置くことで、開発用の `manage.py runserver` が
+    # WSGIではなくASGI(config.asgi.application)経由で起動し、
+    # WebSocket(/ws/...)もあわせて捌けるようになる。
+    "daphne",
+
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",

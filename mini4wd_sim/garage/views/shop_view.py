@@ -16,6 +16,8 @@ from django.shortcuts import render
 from django.views.decorators.http import require_POST
 
 from game.models.car_skills_model import CarSkill
+from game.models.car_type_model import CarType
+from garage.models.car_model import Car
 from garage.models.color_model import CarColor
 from garage.models.user_color_model import UserColor
 from garage.models.user_preset_slot_model import UserPresetSlot
@@ -42,6 +44,20 @@ def shop_view(request):
     while next_preset_number in unlocked_presets:
         next_preset_number += 1
 
+    # ── 左側3Dプレビュー用: 現在装備中の車体情報（改修要件5） ──
+    current_car = user.car or Car.objects.filter(user=user, preset_number=Car.CURRENT_PRESET_NUMBER).first()
+    preview_car = None
+    if current_car is not None:
+        preview_car = {
+            "car_name": current_car.car_name,
+            "color_1": current_car.color_1.color_code,
+            "color_2": current_car.color_2.color_code,
+            "color_3": current_car.color_3.color_code,
+            "car_type": current_car.car_type_id,
+            "pattern": current_car.car_type.pattern,
+            "mark_color": current_car.car_type.mark_color,
+        }
+
     shop_state = {
         "colors": colors,
         "skills": skills,
@@ -50,6 +66,7 @@ def shop_view(request):
         "color_price": settings.COLOR_PRICE_EN,
         "skill_price": settings.SKILL_PRICE_EN,
         "user_en": user.en,
+        "preview_car": preview_car,
     }
     return render(request, "garage/shop.html", {"shop_state_json": json.dumps(shop_state, ensure_ascii=False)})
 

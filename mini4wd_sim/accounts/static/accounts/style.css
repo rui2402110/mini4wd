@@ -4,7 +4,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-    background: #08080e;
+    background: #05050a;
     color: #e0e0e0;
     font-family: 'Courier New', monospace;
     min-height: 100vh;
@@ -133,3 +133,14 @@ a { color: inherit; text-decoration: none; }
     letter-spacing: 1px;
 }
 .stat-chip b { color: #00ff88; }
+
+/* ══════════════════════════════════════════════════════════════════
+   スクロールバー共通デザイン（黒・四角。ダークUIに合わせて統一） ── 改修要件6
+   ══════════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #000000; }
+::-webkit-scrollbar-thumb { background: #222222; border: 1px solid #000000; }
+::-webkit-scrollbar-thumb:hover { background: #333333; }
+::-webkit-scrollbar-corner { background: #000000; }
+* { scrollbar-width: thin; scrollbar-color: #222222 #000000; }
+

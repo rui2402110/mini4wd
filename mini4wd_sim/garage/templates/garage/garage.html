@@ -54,14 +54,6 @@
             <select id="skillSelectSub2" class="skill-select"></select>
             <div id="skillDescSub2" class="desc-box"></div>
 
-            <div class="panel-title">PRESET</div>
-            <div class="preset-grid" id="presetGrid"></div>
-            <div class="preset-note">
-                ※空きスロットをクリックすると現在の設定を保存します（サーバーに保存されます）。<br>
-                保存済みスロットをクリックすると設定を読み込み、そのまま装備状態になります（右上の×で削除）。<br>
-                5枠目以降はショップで購入すると解放されます。
-            </div>
-
             <div class="panel-title">COLOR 1 (BODY)</div>
             <div class="swatch-grid" id="swatchBody"></div>
 
@@ -73,6 +65,24 @@
 
             <div class="note">
                 ※所持していないカラー・スキルはショップで購入することで選択可能になります。
+            </div>
+
+            <div class="garage-action-row">
+                <button class="btn" id="btnSaveGarage">💾 SAVE</button>
+                <button class="btn alt" id="btnCallPreset">📂 CALL PRESET</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── プリセット登録/呼び出し共用モーダル ── -->
+    <div id="presetModalOverlay">
+        <div id="presetModal">
+            <h3 id="presetModalTitle">プリセットに登録</h3>
+            <p id="presetModalDesc" class="hint-text"></p>
+            <div id="presetSlotButtons"></div>
+            <div id="presetModalActions">
+                <button class="btn" id="presetModalConfirm">登録する</button>
+                <button class="btn danger" id="presetModalCancel">キャンセル</button>
             </div>
         </div>
     </div>

@@ -10,29 +10,42 @@
     <link rel="stylesheet" href="{% static 'garage/shop.css' %}">
 </head>
 
-<body class="shop">
+<body class="garage shop">
     <div id="header">
-        <div id="title">SHOP<small>v1.0</small></div>
+        <div id="title">SHOP<small>v1.1</small></div>
         <div id="shop-header-right">
             <div id="enBalance">EN: <b id="enBalanceVal">-</b></div>
             <button id="backBtn">◀ メニューへ戻る</button>
         </div>
     </div>
 
-    <div id="shop-main">
-        <div class="shop-section">
-            <h2>COLORS <small>(1件 75,000 en)</small></h2>
-            <div class="shop-grid" id="colorGrid"></div>
+    <div id="main">
+        <!-- 左側: プレビュー用3D車体表示（改修要件5） -->
+        <div id="viewport">
+            <canvas id="threeCanvas"></canvas>
+            <div id="carLabel">
+                <div class="nm" id="carLabelName">-</div>
+                <div class="sub">MACHINE PREVIEW</div>
+            </div>
+            <div id="dragHint">DRAG TO ROTATE</div>
         </div>
 
-        <div class="shop-section">
-            <h2>SKILLS <small>(1件 15,000 en)</small></h2>
-            <div class="shop-grid" id="skillGrid"></div>
-        </div>
+        <!-- 右側: 購入リスト（スクロール可能） -->
+        <div id="shop-main">
+            <div class="shop-section">
+                <h2>COLORS <small>(1件 75,000 en)</small></h2>
+                <div class="shop-grid" id="colorGrid"></div>
+            </div>
 
-        <div class="shop-section">
-            <h2>PRESET SLOT <small>(150,000 en)</small></h2>
-            <div class="shop-grid" id="presetSlotGrid"></div>
+            <div class="shop-section">
+                <h2>SKILLS <small>(1件 15,000 en)</small></h2>
+                <div class="shop-grid" id="skillGrid"></div>
+            </div>
+
+            <div class="shop-section">
+                <h2>PRESET SLOT <small>(150,000 en)</small></h2>
+                <div class="shop-grid" id="presetSlotGrid"></div>
+            </div>
         </div>
     </div>
 
@@ -42,6 +55,8 @@
     </div>
 
     <script>window.__SHOP_STATE__ = {{ shop_state_json|safe }};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="{% static 'garage/car_view.js' %}"></script>
     <script src="{% static 'garage/shop.js' %}"></script>
 </body>
 

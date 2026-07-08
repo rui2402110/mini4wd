@@ -1627,3 +1627,13 @@
             color: #2a2a2a;
             pointer-events: none;
         }
+/* ══════════════════════════════════════════════════════════════════
+   スクロールバー共通デザイン（黒・四角。ダークUIに合わせて統一） ── 改修要件6
+   ══════════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #000000; }
+::-webkit-scrollbar-thumb { background: #222222; border: 1px solid #000000; }
+::-webkit-scrollbar-thumb:hover { background: #333333; }
+::-webkit-scrollbar-corner { background: #000000; }
+* { scrollbar-width: thin; scrollbar-color: #222222 #000000; }
+

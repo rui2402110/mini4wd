@@ -1,17 +1,20 @@
 // ══════════════════════════════════════════════════════════════════
-//  garage_online.js ── ガレージ画面のサーバー連携ブリッジ
+//  garage_online.js ── ガレージ画面のサーバー連携ブリッジ（改修要件3対応版）
 //  ・garage.js（既存のUIロジック）の後に読み込むこと。
-//  ・所持していないカラー/スキルをCOLOR*_PRESETS/SKILLS_DATAから除外して再描画し、
-//    savePreset/loadPreset をラップしてサーバーへの保存・装備リクエストを行う。
-//  ・garage.js側の関数・変数はいずれもトップレベルの let/const/function 宣言のため、
-//    別スクリプトタグからも同一グローバル字句スコープとして参照・再代入できる
-//    （クラシックscriptの仕様を利用したノンインベーシブな統合）。
+//  ・所持していないカラー/スキルをCOLOR*_PRESETS/SKILLS_DATAから除外して再描画する。
+//  ・SAVEボタン：現在の編集内容をそのまま「現在使用中(99)」として保存・装備し、
+//    続けてプリセット1〜5への追加登録を行うかどうかのポップアップを出す。
+//  ・CALL PRESETボタン：同じポップアップUIでプリセットを選び、ガレージの
+//    表示内容をそのプリセットの内容に置き換える（呼び出すだけで即装備はしない）。
 // ══════════════════════════════════════════════════════════════════
 'use strict';
 
 (function () {
     const STATE = window.__GARAGE_STATE__;
     if (!STATE) return;
+
+    const TYPE_CLIENT_TO_SERVER = { ESCAPE: 'EARLY', BALANCED: 'STEADY', CLOSER: 'LATE' };
+    const TYPE_SERVER_TO_CLIENT = { EARLY: 'ESCAPE', STEADY: 'BALANCED', LATE: 'CLOSER' };
 
     function getCookie(name) {
         const m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
@@ -48,46 +51,101 @@
         const filtered = SKILLS_DATA.filter(s => ownedSet.has(s.id));
         SKILLS_DATA.length = 0; filtered.forEach(s => SKILLS_DATA.push(s));
     }
-
-    // ── プリセットロック判定をサーバーの開放状況に合わせる ──
-    if (typeof PRESET_MAX !== 'undefined') {
-        window.__UNLOCKED_PRESETS__ = STATE.unlocked_presets || [1, 2, 3, 4];
-    }
-
-    // 再描画（garage.js初期化時点では所持データ未反映だったため、ここで反映後に再描画する）
     if (typeof refreshSkillSelects === 'function') refreshSkillSelects();
     if (typeof renderSwatches === 'function') renderSwatches();
 
-    // ── サーバー保存済みプリセットをロードしてUIに反映 ──
-    if (typeof presets !== 'undefined' && STATE.cars) {
-        Object.keys(STATE.cars).forEach(presetNumStr => {
-            const presetNum = Number(presetNumStr);
-            if (presetNum === STATE.current_preset_number) return; // 99(現在使用中)はプリセット欄には出さない
-            const car = STATE.cars[presetNumStr];
-            if (!car || presetNum < 1 || presetNum > PRESET_MAX) return;
-            presets[presetNum - 1] = {
-                name: car.car_name,
-                type: car.car_type,
-                body: hexToInt(car.color_1),
-                accent: hexToInt(car.color_2),
-                mark: hexToInt(car.color_3),
-                mainSkill: car.main_skill,
-                subSkill1: car.sub_skill_1,
-                subSkill2: car.sub_skill_2,
-            };
+    // ── 現在使用中(99)の車体があれば、初期表示をそれに合わせる ──
+    const currentCar = STATE.cars ? STATE.cars[String(STATE.current_preset_number)] : null;
+    if (currentCar && typeof applyCarData === 'function') {
+        applyCarData({
+            name: currentCar.car_name,
+            type: TYPE_SERVER_TO_CLIENT[currentCar.car_type] || 'ESCAPE',
+            body: hexToInt(currentCar.color_1),
+            accent: hexToInt(currentCar.color_2),
+            mark: hexToInt(currentCar.color_3),
+            mainSkill: currentCar.main_skill,
+            subSkill1: currentCar.sub_skill_1,
+            subSkill2: currentCar.sub_skill_2,
         });
-        if (typeof renderPresets === 'function') renderPresets();
     }
 
-    // ── savePreset / loadPreset をラップしてサーバーへ反映 ──
-    if (typeof savePreset === 'function') {
-        const originalSave = savePreset;
-        savePreset = function (i) {
-            originalSave(i);
-            const data = (typeof presets !== 'undefined') ? presets[i] : null;
-            if (!data) return;
+    // ══════════════════════════════════════════════════════════════
+    //  プリセット登録/呼び出し 共用モーダル
+    // ══════════════════════════════════════════════════════════════
+    const overlay = document.getElementById('presetModalOverlay');
+    const modalTitle = document.getElementById('presetModalTitle');
+    const modalDesc = document.getElementById('presetModalDesc');
+    const slotButtonsWrap = document.getElementById('presetSlotButtons');
+    const confirmBtn = document.getElementById('presetModalConfirm');
+    const cancelBtn = document.getElementById('presetModalCancel');
+
+    let mode = 'register'; // 'register' | 'call'
+    let selectedSlot = null;
+
+    function openModal(newMode) {
+        mode = newMode;
+        selectedSlot = null;
+        modalTitle.textContent = mode === 'register' ? 'プリセットに登録' : 'プリセットを呼び出す';
+        modalDesc.textContent = mode === 'register'
+            ? '登録したいプリセット番号を選んで「登録する」を押してください。'
+            : '呼び出したいプリセット番号を選んで「呼び出す」を押してください。';
+        confirmBtn.textContent = mode === 'register' ? '登録する' : '呼び出す';
+        renderSlotButtons();
+        overlay.classList.add('open');
+    }
+    function closeModal() { overlay.classList.remove('open'); }
+
+    function renderSlotButtons() {
+        slotButtonsWrap.innerHTML = '';
+        for (let num = 1; num <= 5; num++) {
+            const unlocked = (STATE.unlocked_presets || [1, 2, 3, 4]).includes(num);
+            const carData = STATE.cars ? STATE.cars[String(num)] : null;
+            const btn = document.createElement('div');
+            btn.className = 'preset-slot-btn' + (carData ? ' filled' : '') + (!unlocked ? ' locked' : '');
+            btn.innerHTML = `${num}<span class="slot-name">${!unlocked ? '未開放' : (carData ? carData.car_name : '空き')}</span>`;
+            if (unlocked && !(mode === 'call' && !carData)) {
+                btn.addEventListener('click', () => {
+                    selectedSlot = num;
+                    slotButtonsWrap.querySelectorAll('.preset-slot-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                });
+            }
+            slotButtonsWrap.appendChild(btn);
+        }
+    }
+
+    document.getElementById('btnSaveGarage').addEventListener('click', () => {
+        const data = getCurrentCarData();
+        postJSON('/garage/api/save-current/', {
+            car_name: data.name,
+            color_1: intToHex(data.body),
+            color_2: intToHex(data.accent),
+            color_3: intToHex(data.mark),
+            main_skill: data.mainSkill,
+            sub_skill_1: data.subSkill1,
+            sub_skill_2: data.subSkill2,
+            car_type: TYPE_CLIENT_TO_SERVER[data.type] || 'STEADY',
+        }).then(res => {
+            if (!res.ok) { alert('保存に失敗しました: ' + res.error); return; }
+            STATE.cars[String(STATE.current_preset_number)] = {
+                car_name: data.name, color_1: intToHex(data.body), color_2: intToHex(data.accent), color_3: intToHex(data.mark),
+                main_skill: data.mainSkill, sub_skill_1: data.subSkill1, sub_skill_2: data.subSkill2,
+                car_type: TYPE_CLIENT_TO_SERVER[data.type] || 'STEADY',
+            };
+            openModal('register');
+        });
+    });
+
+    document.getElementById('btnCallPreset').addEventListener('click', () => openModal('call'));
+    cancelBtn.addEventListener('click', closeModal);
+
+    confirmBtn.addEventListener('click', () => {
+        if (selectedSlot === null) { closeModal(); return; }
+
+        if (mode === 'register') {
+            const data = getCurrentCarData();
             postJSON('/garage/api/save/', {
-                preset_number: i + 1,
+                preset_number: selectedSlot,
                 car_name: data.name,
                 color_1: intToHex(data.body),
                 color_2: intToHex(data.accent),
@@ -95,25 +153,31 @@
                 main_skill: data.mainSkill,
                 sub_skill_1: data.subSkill1,
                 sub_skill_2: data.subSkill2,
-                car_type: data.type,
-            }).then(res => { if (!res.ok) alert('保存に失敗しました: ' + res.error); });
-        };
-    }
-
-    if (typeof loadPreset === 'function') {
-        const originalLoad = loadPreset;
-        loadPreset = function (i) {
-            originalLoad(i);
-            postJSON('/garage/api/equip/', { preset_number: i + 1 })
-                .then(res => { if (!res.ok) alert('装備に失敗しました: ' + res.error); });
-        };
-    }
-
-    if (typeof clearPreset === 'function') {
-        const originalClear = clearPreset;
-        clearPreset = function (i) {
-            originalClear(i);
-            postJSON('/garage/api/delete/', { preset_number: i + 1 });
-        };
-    }
+                car_type: TYPE_CLIENT_TO_SERVER[data.type] || 'STEADY',
+            }).then(res => {
+                if (!res.ok) { alert('プリセット登録に失敗しました: ' + res.error); return; }
+                STATE.cars[String(selectedSlot)] = {
+                    car_name: data.name, color_1: intToHex(data.body), color_2: intToHex(data.accent), color_3: intToHex(data.mark),
+                    main_skill: data.mainSkill, sub_skill_1: data.subSkill1, sub_skill_2: data.subSkill2,
+                    car_type: TYPE_CLIENT_TO_SERVER[data.type] || 'STEADY',
+                };
+                closeModal();
+            });
+        } else {
+            const carData = STATE.cars[String(selectedSlot)];
+            if (carData && typeof applyCarData === 'function') {
+                applyCarData({
+                    name: carData.car_name,
+                    type: TYPE_SERVER_TO_CLIENT[carData.car_type] || 'ESCAPE',
+                    body: hexToInt(carData.color_1),
+                    accent: hexToInt(carData.color_2),
+                    mark: hexToInt(carData.color_3),
+                    mainSkill: carData.main_skill,
+                    subSkill1: carData.sub_skill_1,
+                    subSkill2: carData.sub_skill_2,
+                });
+            }
+            closeModal();
+        }
+    });
 })();

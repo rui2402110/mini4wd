@@ -72,6 +72,30 @@
             box-shadow: 0 0 14px #00ff8840;
         }
 
+        /* ══════════════════════════════════════════════════════════════════
+           共通 .btn クラス（改修要件3・5で追加したSAVE/CALL PRESET/購入ボタン等、
+           IDに依存しない汎用ボタンのための基底スタイル。#backBtnと同系統の見た目）
+           ══════════════════════════════════════════════════════════════════ */
+        .btn {
+            padding: 9px 22px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 2px solid #00ff88;
+            background: transparent;
+            color: #00ff88;
+            cursor: pointer;
+            transition: all 0.18s;
+            display: inline-block;
+        }
+        .btn:hover { background: #00ff8820; box-shadow: 0 0 14px #00ff8840; }
+        .btn.alt { border-color: #0099ff; color: #0099ff; }
+        .btn.alt:hover { background: #0099ff20; box-shadow: 0 0 14px #0099ff40; }
+        .btn.danger { border-color: #ff3366; color: #ff3366; }
+        .btn.danger:hover { background: #ff336620; box-shadow: 0 0 14px #ff336640; }
+        .btn:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+
 
         /* ── レース画面(race.html)専用のヘッダーボタン ── */
         #startBtn {
@@ -1627,3 +1651,79 @@
             color: #2a2a2a;
             pointer-events: none;
         }
+/* ══════════════════════════════════════════════════════════════════
+   スクロールバー共通デザイン（黒・四角。ダークUIに合わせて統一） ── 改修要件6
+   ══════════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #000000; }
+::-webkit-scrollbar-thumb { background: #222222; border: 1px solid #000000; }
+::-webkit-scrollbar-thumb:hover { background: #333333; }
+::-webkit-scrollbar-corner { background: #000000; }
+* { scrollbar-width: thin; scrollbar-color: #222222 #000000; }
+
+
+/* ══════════════════════════════════════════════════════════════════
+   ガレージ改修: 保存/プリセット呼び出しボタン・共用モーダル（改修要件3）
+   ══════════════════════════════════════════════════════════════════ */
+.garage-action-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #223;
+}
+.garage-action-row .btn { flex: 1; text-align: center; }
+
+#presetModalOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000000cc;
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+}
+#presetModalOverlay.open { display: flex; }
+
+#presetModal {
+    width: 380px;
+    max-width: 90vw;
+    background: #0e0e16;
+    border: 2px solid #00ff88;
+    box-shadow: 0 0 40px #00ff8840;
+    padding: 26px;
+}
+#presetModal h3 {
+    color: #00ff88;
+    font-size: 15px;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+#presetModal .hint-text { color: #778; font-size: 12px; margin-bottom: 16px; text-align: center; }
+
+#presetSlotButtons {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+}
+.preset-slot-btn {
+    padding: 14px 0;
+    text-align: center;
+    border: 2px solid #223;
+    background: #050508;
+    color: #889;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.preset-slot-btn .slot-name { display: block; font-size: 9px; font-weight: normal; color: #556; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.preset-slot-btn.filled { border-color: #0099ff; color: #0099ff; }
+.preset-slot-btn.selected { border-color: #00ff88; color: #00ff88; box-shadow: 0 0 12px #00ff8850; }
+.preset-slot-btn.locked { opacity: 0.35; cursor: not-allowed; }
+
+#presetModalActions { display: flex; gap: 10px; }
+#presetModalActions .btn { flex: 1; text-align: center; }

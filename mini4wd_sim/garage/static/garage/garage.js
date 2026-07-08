@@ -187,59 +187,13 @@
             refreshSkillSelects();
         }
 
-        // ── UIイベント: プリセット機能デモ（5枠・5枠目は未開放） ──
-        // ※ここではブラウザメモリ上のみで保持するデモ実装。開放条件ロジックは今後実装予定。
-        const PRESET_MAX = 5;
-        const PRESET_LOCKED_INDEX = 4; // 0-indexed の5枠目
-        const presets = new Array(PRESET_MAX).fill(null);
-        const presetGrid = document.getElementById('presetGrid');
-
-        function renderPresets() {
-            presetGrid.innerHTML = '';
-            for (let i = 0; i < PRESET_MAX; i++) {
-                const slot = document.createElement('div');
-                const isLocked = i === PRESET_LOCKED_INDEX;
-                const data = presets[i];
-
-                slot.className = 'preset-slot' + (isLocked ? ' locked' : '') + (data ? ' filled' : '');
-
-                if (isLocked) {
-                    slot.innerHTML = `
-                        <div class="lock-icon">🔒</div>
-                        <div class="slot-locked-label">LOCKED</div>
-                    `;
-                    // 未開放スロットはクリック不可
-                } else if (data) {
-                    slot.innerHTML = `
-                        <span class="slot-clear" title="このプリセットを削除">×</span>
-                        <div class="slot-num">${i + 1}</div>
-                        <div class="slot-name">${data.name}</div>
-                    `;
-                    slot.title = `クリックで読み込み: ${data.name}`;
-                    slot.addEventListener('click', () => loadPreset(i));
-                    slot.querySelector('.slot-clear').addEventListener('click', (ev) => {
-                        ev.stopPropagation();
-                        clearPreset(i);
-                    });
-                } else {
-                    slot.innerHTML = `
-                        <div class="slot-num">${i + 1}</div>
-                        <div class="slot-empty">EMPTY</div>
-                    `;
-                    slot.title = 'クリックで現在の設定を保存';
-                    slot.addEventListener('click', () => savePreset(i));
-                }
-
-                presetGrid.appendChild(slot);
-            }
-        }
-
-        function savePreset(i) {
-            if (i === PRESET_LOCKED_INDEX) return; // ロック中は保存不可
+        // ── 現在の構成を取得/反映するヘルパー（保存・装備・プリセット呼び出しで使用） ──
+        // ※プリセット枠のUIはgarage_online.js側のモーダルに移管したため、
+        //   プリセットの保存先データ自体はサーバー（DB）で管理する。
+        function getCurrentCarData() {
             const st = carState[currentType];
-            const name = machineNameInput.value || "NO NAME";
-            presets[i] = {
-                name,
+            return {
+                name: machineNameInput.value || "NO NAME",
                 type: currentType,
                 body: st.body,
                 accent: st.accent,
@@ -248,13 +202,10 @@
                 subSkill1: st.subSkill1,
                 subSkill2: st.subSkill2,
             };
-            renderPresets();
         }
 
-        function loadPreset(i) {
-            const data = presets[i];
+        function applyCarData(data) {
             if (!data) return;
-
             machineNameInput.value = data.name;
             carState[data.type].body = data.body;
             carState[data.type].accent = data.accent;
@@ -262,13 +213,7 @@
             carState[data.type].mainSkill = data.mainSkill;
             carState[data.type].subSkill1 = data.subSkill1;
             carState[data.type].subSkill2 = data.subSkill2;
-
             selectMachine(data.type);
-        }
-
-        function clearPreset(i) {
-            presets[i] = null;
-            renderPresets();
         }
 
         // ── UIイベント: カラースウォッチ生成 ──
@@ -345,7 +290,6 @@
 
         // ── 初期化 ──
         initSkills();
-        renderPresets();
         selectMachine('ESCAPE');
 
         // ── メインループ ──

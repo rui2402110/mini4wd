@@ -109,8 +109,8 @@ class RoomConsumer(JsonWebsocketConsumer):
     def handle_add_bot(self, payload):
         members = self.store.smembers(self.room_id)
         bots = self.store.get_bots(self.room_id)
-        if len(members) > 3:
-            self.send_json({"type": "error", "payload": {"code": "TOO_MANY_MEMBERS", "message": "部屋が3人以下の場合のみBotを追加できます。"}})
+        if len(members) + len(bots) >= MAX_MEMBERS:
+            self.send_json({"type": "error", "payload": {"code": "ROOM_FULL", "message": "レース参加枠(4)が満員のため、Botを追加できません。"}})
             return
         if len(bots) >= MAX_BOTS:
             self.send_json({"type": "error", "payload": {"code": "BOT_LIMIT", "message": "Botはこれ以上追加できません。"}})
@@ -166,9 +166,10 @@ class RoomConsumer(JsonWebsocketConsumer):
         members = self.store.smembers(self.room_id)
         if not members:
             return
-        ready_count = sum(1 for v in ready_map.values() if v)
-        if ready_count < max(1, len(members)) / 2:
-            self.send_json({"type": "error", "payload": {"code": "NOT_ENOUGH_READY", "message": "準備完了が50%未満のため開始できません。"}})
+        # ホストは常時準備完了として扱う（改修要件4）
+        ready_count = sum(1 for uid in members if str(uid) == str(room.host_user_id) or ready_map.get(str(uid)))
+        if ready_count < len(members) * 0.5:
+            self.send_json({"type": "error", "payload": {"code": "NOT_ENOUGH_READY", "message": "ホストを含め、準備完了が50%未満のため開始できません。"}})
             return
 
         room.status = Room.STATUS_RACING
@@ -213,6 +214,10 @@ class RoomConsumer(JsonWebsocketConsumer):
         ready_map = self.store.hgetall(self.room_id)
         bots = self.store.get_bots(self.room_id)
         bets = self.store.get_bets(self.room_id)
+
+        # ホストは常時準備完了として扱う（改修要件4）。表示上もサーバーの判定と一致させる。
+        if room.host_user_id is not None:
+            ready_map[str(room.host_user_id)] = True
 
         state = {
             "members": members,

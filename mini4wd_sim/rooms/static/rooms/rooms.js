@@ -1,26 +1,26 @@
-// rooms/static/rooms/rooms.js ── 部屋ロビーのWebSocketクライアント（room_consumer.py対応）
+// rooms/static/rooms/rooms.js ── 部屋ロビーのWebSocketクライアント（room_consumer.py対応・改修要件4版）
 'use strict';
 
 (function () {
     const ROOM_ID = window.__ROOM_ID__;
     const MY_USER_ID = window.__MY_USER_ID__;
-    let IS_HOST = !!window.__IS_HOST__;
+    const MAX_SLOTS = 4;
 
-    const memberList = document.getElementById('memberList');
-    const botList = document.getElementById('botList');
+    const memberPanel = document.getElementById('hud-rankings');
+    const playerListBody = document.getElementById('player-list-body');
+    const memberCountLabel = document.getElementById('memberCountLabel');
+    const raceStatus = document.getElementById('race-status');
     const readyBtn = document.getElementById('readyBtn');
     const startBtn = document.getElementById('startBtn');
-    const statusLine = document.getElementById('statusLine');
     const betSlider = document.getElementById('betSlider');
     const betVal = document.getElementById('betVal');
-    const addBotBtn = document.getElementById('addBotBtn');
-    const chatFeed = document.getElementById('chatFeed');
-    const chatInput = document.getElementById('chatInput');
-    const chatSend = document.getElementById('chatSend');
+    const chatFeed = document.getElementById('commentary-feed');
+    const chatInput = document.getElementById('chat-input');
+    const chatSend = document.getElementById('chat-send');
     const leaveBtn = document.getElementById('leaveBtn');
 
     let ready = false;
-    let latestState = null;
+    let isHost = false;
 
     const proto = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
     const ws = new WebSocket(`${proto}${window.location.host}/ws/room/${ROOM_ID}/`);
@@ -29,8 +29,8 @@
         if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type, payload: payload || {} }));
     }
 
-    ws.addEventListener('open', () => { statusLine.textContent = '接続しました。'; });
-    ws.addEventListener('close', () => { statusLine.textContent = '接続が切断されました。'; });
+    ws.addEventListener('open', () => { raceStatus.textContent = '対戦相手を待っています...'; });
+    ws.addEventListener('close', () => { raceStatus.textContent = '接続が切断されました。'; });
 
     ws.addEventListener('message', (ev) => {
         let msg;
@@ -38,18 +38,14 @@
         const { type, payload } = msg;
 
         if (type === 'room_state') {
-            latestState = payload;
-            IS_HOST = payload.host_user_id === MY_USER_ID;
-            renderMembers(payload);
-            startBtn.style.display = IS_HOST ? 'inline-block' : 'none';
+            renderState(payload);
         } else if (type === 'host_changed') {
-            IS_HOST = payload.new_host_user_id === MY_USER_ID;
-            if (IS_HOST) statusLine.textContent = 'あなたがホストになりました。';
+            isHost = payload.new_host_user_id === MY_USER_ID;
+            startBtn.style.display = isHost ? 'inline-block' : 'none';
+            if (isHost) raceStatus.textContent = 'あなたがホストになりました。';
         } else if (type === 'race_starting') {
-            statusLine.textContent = `レース開始まで ${payload.countdown} 秒...`;
+            raceStatus.textContent = `レース開始まで ${payload.countdown} 秒...`;
             setTimeout(() => { window.location.href = `/game/race/${ROOM_ID}/`; }, (payload.countdown || 3) * 1000);
-        } else if (type === 'bet_updated') {
-            // 自分以外の賭け金更新の可視化は簡略化のため省略（room_stateの次回更新で反映）
         } else if (type === 'chat_broadcast') {
             appendChat(payload.name, payload.text);
         } else if (type === 'error') {
@@ -57,33 +53,82 @@
         }
     });
 
-    function renderMembers(state) {
-        memberList.innerHTML = '';
-        (state.members || []).forEach(uid => {
-            const el = document.createElement('div');
-            const isReady = !!state.ready_map[uid];
-            el.className = 'member-item' + (isReady ? ' ready' : '');
-            const bet = state.bets && state.bets[uid] ? state.bets[uid] : 100;
-            el.innerHTML = `<span>user#${uid}${Number(uid) === MY_USER_ID ? ' (YOU)' : ''}${Number(uid) === state.host_user_id ? ' 👑' : ''}</span><span>${isReady ? '✓READY' : '...'} / ${bet}en</span>`;
-            memberList.appendChild(el);
+    function renderState(state) {
+        isHost = state.host_user_id === MY_USER_ID;
+        startBtn.style.display = isHost ? 'inline-block' : 'none';
+        readyBtn.style.display = isHost ? 'none' : 'inline-block';
+
+        const members = state.members || [];
+        memberCountLabel.textContent = `${members.length + (state.bots || []).length}/${MAX_SLOTS}`;
+
+        // ── メンバー枠（車体パネルと同じ .car-panel を再利用したスロット表示） ──
+        memberPanel.innerHTML = '';
+        const slots = [];
+        members.forEach(uid => slots.push({ kind: 'member', id: uid }));
+        (state.bots || []).forEach(botId => slots.push({ kind: 'bot', id: botId }));
+        while (slots.length < MAX_SLOTS) slots.push({ kind: 'empty' });
+
+        slots.forEach((slot, i) => {
+            const panel = document.createElement('div');
+            panel.className = 'car-panel';
+
+            if (slot.kind === 'member') {
+                const uidStr = String(slot.id);
+                const isMe = Number(slot.id) === MY_USER_ID;
+                const isSlotHost = Number(slot.id) === state.host_user_id;
+                const isReady = isSlotHost || !!state.ready_map[uidStr];
+                if (isMe) panel.classList.add('own-car');
+                panel.innerHTML = `
+                    <div class="car-name">
+                        ${isMe ? '<span class="own-car-arrow">YOU</span>' : ''}
+                        ${isSlotHost ? '★ ' : ''}user#${slot.id}
+                    </div>
+                    <div class="car-tags-row">
+                        <span class="car-type-badge" style="background:${isReady ? '#00ff8822' : '#55555522'};color:${isReady ? '#00ff88' : '#889'};border:1px solid ${isReady ? '#00ff8855' : '#555'}">${isReady ? '✓ READY' : '未準備'}</span>
+                    </div>
+                `;
+            } else if (slot.kind === 'bot') {
+                panel.innerHTML = `
+                    <div class="car-name">🤖 ${slot.id}</div>
+                    <div class="car-tags-row">
+                        <span class="car-type-badge" style="background:#0099ff22;color:#0099ff;border:1px solid #0099ff55">BOT</span>
+                        ${isHost ? `<span class="rm-bot" data-bot="${slot.id}" style="cursor:pointer; color:#ff5566; margin-left:8px;">×削除</span>` : ''}
+                    </div>
+                `;
+            } else {
+                panel.classList.add('empty-slot');
+                panel.innerHTML = isHost
+                    ? `<button class="add-bot-btn" style="width:100%; padding:10px; font-size:11px;">+ Bot追加</button>`
+                    : `<div class="car-name" style="color:#445;">空き枠</div>`;
+            }
+            memberPanel.appendChild(panel);
         });
 
-        botList.innerHTML = '';
-        (state.bots || []).forEach(botId => {
-            const el = document.createElement('div');
-            el.className = 'bot-item';
-            el.innerHTML = `<span>${botId}</span>${IS_HOST ? '<span class="rm" data-bot="' + botId + '">×削除</span>' : ''}`;
-            botList.appendChild(el);
-        });
-        botList.querySelectorAll('.rm').forEach(elm => {
+        memberPanel.querySelectorAll('.rm-bot').forEach(elm => {
             elm.addEventListener('click', () => send('remove_bot', { bot_id: elm.dataset.bot }));
+        });
+        memberPanel.querySelectorAll('.add-bot-btn').forEach(elm => {
+            elm.addEventListener('click', () => send('add_bot', {}));
+        });
+
+        // ── プレイヤーリスト（レート欄はこの段階では取得していないため簡易表示） ──
+        playerListBody.innerHTML = '';
+        members.forEach(uid => {
+            const uidStr = String(uid);
+            const isSlotHost = Number(uid) === state.host_user_id;
+            const isReady = isSlotHost || !!state.ready_map[uidStr];
+            const bet = (state.bets && state.bets[uidStr]) || 100;
+            const row = document.createElement('div');
+            row.className = 'player-row';
+            row.innerHTML = `<span>${isSlotHost ? '★' : ''}user#${uid}${Number(uid) === MY_USER_ID ? '(YOU)' : ''}</span><span>-</span><span>${isReady ? '✓' : '-'}</span><span>${bet}</span>`;
+            playerListBody.appendChild(row);
         });
     }
 
     function appendChat(name, text) {
         const el = document.createElement('div');
-        el.className = 'msg';
-        el.innerHTML = `<span class="nm">${name}:</span> ${text}`;
+        el.className = 'comm-msg system';
+        el.innerHTML = `<div class="comm-time">${name}</div>${text}`;
         chatFeed.appendChild(el);
         chatFeed.scrollTop = chatFeed.scrollHeight;
     }
@@ -91,11 +136,11 @@
     readyBtn.addEventListener('click', () => {
         ready = !ready;
         readyBtn.textContent = ready ? '準備完了 ✓' : '準備完了';
+        readyBtn.classList.toggle('is-ready', ready);
         send('ready_toggle', { ready });
     });
 
     startBtn.addEventListener('click', () => send('request_start', {}));
-    addBotBtn.addEventListener('click', () => send('add_bot', {}));
 
     betSlider.addEventListener('input', () => { betVal.textContent = betSlider.value; });
     betSlider.addEventListener('change', () => send('place_bet', { amount: Number(betSlider.value) }));

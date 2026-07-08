@@ -5,6 +5,7 @@ from .models.car_skills_model import CarSkill
 from .models.car_type_model import CarType
 from .models.result_model import Result
 
+
 @admin.register(CarType)
 class CarTypeAdmin(admin.ModelAdmin):
     list_display = ("id", "label", "color", "pattern")

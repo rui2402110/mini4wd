@@ -1,28 +1,631 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ミニ四駆シミュレーター</title>
-    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+    <title>ミニ四駆シミュレーター - GARAGE TERMINAL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            background: #05050a;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #app {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        /* ══════════════════════════ 左パネル ══════════════════════════ */
+        #left-panel {
+            width: 420px;
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+            background: #07070d;
+            border-right: 1px solid #1a2a2a;
+        }
+
+        /* ── 背景の窓グリッド(サイバーパンクな夜景窓) ── */
+        #window-grid {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-auto-rows: 68px;
+            gap: 6px;
+            padding: 18px;
+            z-index: 0;
+            filter: blur(0.2px);
+        }
+
+        .win {
+            background: linear-gradient(160deg, #0c0c16, #050508);
+            border: 1px solid #1c1c28;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .win::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, transparent 48%, #000a 49%, transparent 51%),
+                        linear-gradient(90deg, transparent 48%, #000a 49%, transparent 51%);
+        }
+
+        .win.lit {
+            background: linear-gradient(165deg, var(--wc, #113a3a), #060b0d);
+            box-shadow: inset 0 0 14px var(--wc, #0ff4);
+            animation: flicker 5s ease-in-out infinite;
+        }
+
+        .win.lit.dim { animation-duration: 7s; }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            42% { opacity: 1; }
+            44% { opacity: 0.35; }
+            46% { opacity: 1; }
+            70% { opacity: 0.85; }
+            72% { opacity: 1; }
+        }
+
+        /* ── スキャンライン & ビネット演出 ── */
+        #left-panel::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: repeating-linear-gradient(0deg, #0004 0px, transparent 1px, transparent 3px);
+            z-index: 3;
+        }
+
+        #left-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(ellipse at center, transparent 40%, #05050a 100%);
+            z-index: 2;
+        }
+
+        /* ── ロゴ/ブランド ── */
+        #brand {
+            position: relative;
+            z-index: 4;
+            padding: 26px 30px 0 30px;
+        }
+
+        #brand .logo {
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            color: #00ff88;
+            text-shadow: 0 0 12px #00ff8877;
+        }
+
+        #brand .logo span {
+            color: #0099ff;
+            text-shadow: 0 0 12px #0099ff77;
+        }
+
+        #brand .tagline {
+            font-size: 10px;
+            letter-spacing: 3px;
+            color: #445;
+            margin-top: 6px;
+        }
+
+        /* ── ナビゲーション/ボタンエリア ── */
+        #nav-area {
+            position: relative;
+            z-index: 4;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 18px;
+            padding: 0 34px;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 16px 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            background: rgba(6, 8, 10, 0.7);
+            backdrop-filter: blur(3px);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+
+        .nav-btn .arrow {
+            font-size: 13px;
+            opacity: 0.6;
+            transition: transform 0.2s;
+        }
+
+        .nav-btn:hover .arrow {
+            transform: translateX(4px);
+        }
+
+        .nav-btn.c-green {
+            border: 2px solid #00ff88;
+            color: #00ff88;
+        }
+        .nav-btn.c-green:hover {
+            background: #00ff8815;
+            box-shadow: 0 0 22px #00ff8850;
+        }
+
+        .nav-btn.c-blue {
+            border: 2px solid #0099ff;
+            color: #0099ff;
+        }
+        .nav-btn.c-blue:hover {
+            background: #0099ff15;
+            box-shadow: 0 0 22px #0099ff50;
+        }
+
+        .nav-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* ── フッター ── */
+        #left-footer {
+            position: relative;
+            z-index: 4;
+            padding: 0 30px 22px 30px;
+            font-size: 9px;
+            letter-spacing: 1px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #left-footer .dot {
+            color: #444;
+            animation: pulse-dot 2.4s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        /* ══════════════════════════ 右パネル(3D) ══════════════════════════ */
+        #right-panel {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #threeCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #right-panel::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(ellipse at 50% 60%, transparent 55%, #05050a 100%);
+        }
+
+        #sceneCaption {
+            position: absolute;
+            bottom: 22px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            letter-spacing: 3px;
+            color: #333;
+            pointer-events: none;
+        }
+
+        /* ── スクロールバー共通デザイン（黒・四角） ── */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #000000; }
+        ::-webkit-scrollbar-thumb { background: #222222; border: 1px solid #000000; }
+        ::-webkit-scrollbar-thumb:hover { background: #333333; }
+        ::-webkit-scrollbar-corner { background: #000000; }
+        * { scrollbar-width: thin; scrollbar-color: #222222 #000000; }
+    </style>
 </head>
+
 <body>
-    <div id="header">
-        <div id="title">MINI<span>4WD</span> SIMULATOR<small>v1.3</small></div>
-    </div>
-    <div id="main-center">
-        <div class="card">
-            <h2>ミニ四駆シミュレーターへようこそ</h2>
-            <p class="hint-text" style="margin-bottom:20px;">
-                改造・スキル・賭けを組み込んだミニ四駆オンライン対戦シミュレーターです。<br>
-                パスワードのみでログインでき、未登録の名前は自動で新規アカウントとして作成されます。
-            </p>
-            <div class="submit-row">
-                <button class="btn" id="gotoLoginBtn" data-href="{% url 'accounts:login' %}">ログイン / 新規作成へ進む ▶</button>
+    <div id="app">
+        <div id="left-panel">
+            <div id="window-grid"></div>
+
+            <div id="brand">
+                <div class="logo">MINI<span>4WD</span></div>
+                <div class="tagline">GARAGE TERMINAL // ACCESS REQUIRED</div>
+            </div>
+
+            <div id="nav-area">
+                <button class="nav-btn c-green" id="btnLogin">LOGIN <span class="arrow">▶</span></button>
+                <button class="nav-btn c-blue" id="btnSignin">SIGN IN <span class="arrow">▶</span></button>
+            </div>
+
+            <div id="left-footer">
+                <span>SYS.STATUS <span class="dot">●</span> STANDBY</span>
+                <span>v1.0</span>
             </div>
         </div>
+
+        <div id="right-panel">
+            <canvas id="threeCanvas"></canvas>
+            <div id="sceneCaption">— ENTRANCE / CIRCUIT GARAGE —</div>
+        </div>
     </div>
-    <script src="{% static 'accounts/index_view.js' %}"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        'use strict';
+
+        // ══════════════════════════════════════════════════════════════════
+        //  左パネル: 窓グリッドの生成(ランダムに点灯させ夜景風に見せる)
+        // ══════════════════════════════════════════════════════════════════
+        (function buildWindowGrid() {
+            const grid = document.getElementById('window-grid');
+            const colors = ['#12e0c0', '#0ea0ff', '#ff5fae', '#ffcf3d', '#7d5fff'];
+            const COLS = 6, ROWS = 11;
+            for (let i = 0; i < COLS * ROWS; i++) {
+                const el = document.createElement('div');
+                el.className = 'win';
+                const roll = Math.random();
+                if (roll < 0.4) {
+                    el.classList.add('lit');
+                    if (Math.random() < 0.4) el.classList.add('dim');
+                    const c = colors[Math.floor(Math.random() * colors.length)];
+                    el.style.setProperty('--wc', c + '55');
+                    el.style.animationDelay = (Math.random() * 5).toFixed(2) + 's';
+                }
+                grid.appendChild(el);
+            }
+        })();
+
+        // ══════════════════════════════════════════════════════════════════
+        //  右パネル: THREE.JS ロビーシーン(ドア + カンバン)
+        // ══════════════════════════════════════════════════════════════════
+        const canvas = document.getElementById('threeCanvas');
+        const rightPanel = document.getElementById('right-panel');
+
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer.setClearColor(0x05050a);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x05050a, 0.05);
+
+        const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+        camera.position.set(0, 2.0, 8.6);
+        camera.lookAt(0, 1.6, 0);
+
+        function onResize() {
+            const w = rightPanel.clientWidth, h = rightPanel.clientHeight;
+            renderer.setSize(w, h, false);
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+        }
+        onResize();
+        window.addEventListener('resize', onResize);
+
+        // ── ライティング ──
+        scene.add(new THREE.AmbientLight(0x151022, 1.3));
+        const keyLight = new THREE.DirectionalLight(0x8899ff, 0.5);
+        keyLight.position.set(4, 8, 6);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.set(1024, 1024);
+        scene.add(keyLight);
+
+        const doorGlow = new THREE.PointLight(0x00ffcc, 1.6, 9);
+        doorGlow.position.set(0, 2.0, 1.6);
+        scene.add(doorGlow);
+
+        const kanbanGlow = new THREE.PointLight(0x00ff88, 1.4, 8);
+        kanbanGlow.position.set(0, 4.3, 1.8);
+        scene.add(kanbanGlow);
+
+        const magentaFill = new THREE.PointLight(0xff2fae, 0.7, 10);
+        magentaFill.position.set(-4, 3, 3);
+        scene.add(magentaFill);
+
+        // ── 床 ──
+        const floor = new THREE.Mesh(
+            new THREE.PlaneGeometry(40, 40),
+            new THREE.MeshLambertMaterial({ color: 0x0a0a12 })
+        );
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+        const gridH = new THREE.GridHelper(40, 40, 0x162030, 0x0d0d18);
+        gridH.position.y = 0.001;
+        scene.add(gridH);
+
+        // 床の中央付近だけ淡く発光させるリング(演出)
+        const floorGlowRing = new THREE.Mesh(
+            new THREE.RingGeometry(1.6, 3.2, 48),
+            new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.06, side: THREE.DoubleSide })
+        );
+        floorGlowRing.rotation.x = -Math.PI / 2;
+        floorGlowRing.position.y = 0.005;
+        scene.add(floorGlowRing);
+
+        // ── 背面の壁 ──
+        const wall = new THREE.Mesh(
+            new THREE.PlaneGeometry(40, 16),
+            new THREE.MeshLambertMaterial({ color: 0x0b0b14 })
+        );
+        wall.position.set(0, 8, -1.4);
+        scene.add(wall);
+
+        // 壁のパネルライン(装飾)
+        for (let i = -3; i <= 3; i++) {
+            const strip = new THREE.Mesh(
+                new THREE.BoxGeometry(0.04, 16, 0.04),
+                new THREE.MeshBasicMaterial({ color: 0x1a2a2a })
+            );
+            strip.position.set(i * 2.6, 8, -1.38);
+            scene.add(strip);
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        //  ドア生成
+        // ══════════════════════════════════════════════════════════════════
+        function buildDoor() {
+            const g = new THREE.Group();
+
+            const matFrame = new THREE.MeshLambertMaterial({ color: 0x1c1c26 });
+            const matPanel = new THREE.MeshLambertMaterial({ color: 0x14141c });
+            const matNeon = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
+            const matChrome = new THREE.MeshLambertMaterial({ color: 0x555566 });
+            const matGlass = new THREE.MeshBasicMaterial({ color: 0x00e0ff, transparent: true, opacity: 0.55 });
+
+            // 外枠(左右の柱 + 上部まぐさ)
+            const postGeo = new THREE.BoxGeometry(0.22, 3.9, 0.22);
+            const postL = new THREE.Mesh(postGeo, matFrame); postL.position.set(-1.15, 1.95, 1.5); postL.castShadow = true; g.add(postL);
+            const postR = new THREE.Mesh(postGeo, matFrame); postR.position.set(1.15, 1.95, 1.5); postR.castShadow = true; g.add(postR);
+            const lintel = new THREE.Mesh(new THREE.BoxGeometry(2.52, 0.22, 0.22), matFrame);
+            lintel.position.set(0, 3.95, 1.5); g.add(lintel);
+
+            // ドア本体(2枚扉)
+            [-0.5, 0.5].forEach(sign => {
+                const panel = new THREE.Mesh(new THREE.BoxGeometry(0.94, 3.6, 0.09), matPanel);
+                panel.position.set(sign * 0.98, 1.85, 1.55);
+                panel.castShadow = true;
+                g.add(panel);
+
+                // ネオンの縦ライン(扉の中央側の縁)
+                const neonLine = new THREE.Mesh(new THREE.BoxGeometry(0.035, 3.4, 0.02), matNeon);
+                neonLine.position.set(sign * 0.52, 1.85, 1.605);
+                g.add(neonLine);
+                g.userData.neonLines = g.userData.neonLines || [];
+                g.userData.neonLines.push(neonLine);
+
+                // 小窓(内側から光が漏れているイメージ)
+                const win = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.68, 0.02), matGlass);
+                win.position.set(sign * 0.98, 2.85, 1.605);
+                g.add(win);
+
+                // 窓の格子
+                const barV = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.68, 0.03), matFrame);
+                barV.position.set(sign * 0.98, 2.85, 1.62); g.add(barV);
+                const barH = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.02, 0.03), matFrame);
+                barH.position.set(sign * 0.98, 2.85, 1.62); g.add(barH);
+
+                // 取っ手
+                const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.45, 10), matChrome);
+                handle.rotation.z = Math.PI / 2;
+                handle.position.set(sign * 0.62, 1.55, 1.63);
+                g.add(handle);
+            });
+
+            // 敷居
+            const threshold = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.06, 0.4), matChrome);
+            threshold.position.set(0, 0.03, 1.6); g.add(threshold);
+
+            // 上部の換気口風の意匠(サイバーパンク感)
+            for (let i = -2; i <= 2; i++) {
+                const vent = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.05, 0.05), matNeon);
+                vent.position.set(i * 0.4, 3.72, 1.62);
+                g.add(vent);
+            }
+
+            return g;
+        }
+
+        const door = buildDoor();
+        scene.add(door);
+
+        // ══════════════════════════════════════════════════════════════════
+        //  カンバン(看板)生成 - MINI 4WD SIMULATOR
+        // ══════════════════════════════════════════════════════════════════
+        function buildKanbanTexture() {
+            const cw = 1024, ch = 300;
+            const cnv = document.createElement('canvas');
+            cnv.width = cw; cnv.height = ch;
+            const ctx = cnv.getContext('2d');
+
+            // 背景
+            ctx.fillStyle = '#070b0a';
+            ctx.fillRect(0, 0, cw, ch);
+
+            // 内側の枠線
+            ctx.strokeStyle = '#00ff88';
+            ctx.lineWidth = 6;
+            ctx.strokeRect(14, 14, cw - 28, ch - 28);
+            ctx.strokeStyle = '#0099ff55';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(26, 26, cw - 52, ch - 52);
+
+            // メインタイトル
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 96px "Courier New", monospace';
+            ctx.shadowColor = '#00ff88';
+            ctx.shadowBlur = 34;
+            ctx.fillStyle = '#c8ffe4';
+            ctx.fillText('MINI 4WD', cw / 2, 118);
+
+            ctx.font = 'bold 78px "Courier New", monospace';
+            ctx.shadowColor = '#0099ff';
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = '#cfeaff';
+            ctx.fillText('SIMULATOR', cw / 2, 208);
+
+            // サブテキスト
+            ctx.shadowBlur = 0;
+            ctx.font = '22px "Courier New", monospace';
+            ctx.fillStyle = '#557766';
+            ctx.fillText('- CUSTOM RACING GARAGE -', cw / 2, 264);
+
+            return new THREE.CanvasTexture(cnv);
+        }
+
+        function buildKanban() {
+            const g = new THREE.Group();
+            const tex = buildKanbanTexture();
+            tex.needsUpdate = true;
+
+            const boardW = 4.6, boardH = 1.35;
+            const board = new THREE.Mesh(
+                new THREE.PlaneGeometry(boardW, boardH),
+                new THREE.MeshBasicMaterial({ map: tex })
+            );
+            board.position.set(0, 4.9, -0.3);
+            g.add(board);
+
+            // 背面パネル(厚み演出)
+            const backing = new THREE.Mesh(
+                new THREE.BoxGeometry(boardW + 0.1, boardH + 0.1, 0.06),
+                new THREE.MeshLambertMaterial({ color: 0x111318 })
+            );
+            backing.position.set(0, 4.9, -0.34);
+            g.add(backing);
+
+            // 吊り下げチェーン/アーム
+            const armMat = new THREE.MeshLambertMaterial({ color: 0x3a3a44 });
+            [-1.7, 1.7].forEach(x => {
+                const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 8), armMat);
+                arm.position.set(x, 5.65, -0.9);
+                arm.rotation.x = 0.5;
+                g.add(arm);
+            });
+
+            // 看板を照らすスポット風の小さい発光体
+            const spot1 = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), new THREE.MeshBasicMaterial({ color: 0x00ff88 }));
+            spot1.position.set(-2.0, 5.6, 0.4); g.add(spot1);
+            const spot2 = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), new THREE.MeshBasicMaterial({ color: 0x0099ff }));
+            spot2.position.set(2.0, 5.6, 0.4); g.add(spot2);
+
+            g.userData.board = board;
+            return g;
+        }
+
+        const kanban = buildKanban();
+        scene.add(kanban);
+
+        // ══════════════════════════════════════════════════════════════════
+        //  雰囲気演出: 浮遊パーティクル(サイバー粒子)
+        // ══════════════════════════════════════════════════════════════════
+        const PARTICLE_N = 140;
+        const particleGeo = new THREE.BufferGeometry();
+        const particlePos = new Float32Array(PARTICLE_N * 3);
+        const particleVel = new Float32Array(PARTICLE_N);
+        for (let i = 0; i < PARTICLE_N; i++) {
+            particlePos[i * 3 + 0] = (Math.random() - 0.5) * 18;
+            particlePos[i * 3 + 1] = Math.random() * 8;
+            particlePos[i * 3 + 2] = (Math.random() - 0.5) * 10 + 1;
+            particleVel[i] = 0.15 + Math.random() * 0.35;
+        }
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePos, 3));
+        const particleMat = new THREE.PointsMaterial({ color: 0x33ffcc, size: 0.045, transparent: true, opacity: 0.5, depthWrite: false });
+        const particles = new THREE.Points(particleGeo, particleMat);
+        scene.add(particles);
+
+        function updateParticles(dt) {
+            const pos = particleGeo.attributes.position.array;
+            for (let i = 0; i < PARTICLE_N; i++) {
+                pos[i * 3 + 1] += particleVel[i] * dt;
+                if (pos[i * 3 + 1] > 8) pos[i * 3 + 1] = 0;
+            }
+            particleGeo.attributes.position.needsUpdate = true;
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        //  メインループ
+        // ══════════════════════════════════════════════════════════════════
+        let lastTS = null;
+        function animate(ts) {
+            requestAnimationFrame(animate);
+            if (lastTS === null) lastTS = ts;
+            const dt = Math.min((ts - lastTS) / 1000, 0.05);
+            lastTS = ts;
+            const t = ts * 0.001;
+
+            // カメラのゆったりとしたアイドル揺れ
+            camera.position.x = Math.sin(t * 0.12) * 1.1;
+            camera.position.y = 2.0 + Math.sin(t * 0.2) * 0.08;
+            camera.lookAt(0, 2.1, 0);
+
+            // 看板のゆったりとした揺れ
+            kanban.rotation.z = Math.sin(t * 0.5) * 0.012;
+
+            // ドアのネオンラインのフリッカー
+            if (door.userData.neonLines) {
+                const flick = 0.75 + Math.sin(t * 6.0) * 0.15 + (Math.random() < 0.01 ? -0.4 : 0);
+                door.userData.neonLines.forEach(line => {
+                    line.material.color.setRGB(0, flick, flick * 0.9);
+                });
+            }
+
+            // ドア/看板グロー点滅
+            doorGlow.intensity = 1.4 + Math.sin(t * 2.2) * 0.25;
+            kanbanGlow.intensity = 1.2 + Math.sin(t * 1.6 + 1.0) * 0.2;
+
+            updateParticles(dt);
+
+            renderer.render(scene, camera);
+        }
+        animate(0);
+
+        // ══════════════════════════════════════════════════════════════════
+        //  ボタン操作（ログインフォームへ遷移。パスワードのみ認証のため
+        //  LOGIN / SIGN IN いずれも同じフォームへ遷移する。未登録名は
+        //  そのまま新規作成される仕様のため、SIGN IN側はヒントのみ変える）
+        // ══════════════════════════════════════════════════════════════════
+        document.getElementById('btnLogin').addEventListener('click', () => {
+            window.location.href = "{% url 'accounts:login' %}";
+        });
+        document.getElementById('btnSignin').addEventListener('click', () => {
+            window.location.href = "{% url 'accounts:login' %}";
+        });
+    </script>
 </body>
+
 </html>

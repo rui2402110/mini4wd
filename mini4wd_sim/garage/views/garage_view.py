@@ -82,6 +82,30 @@ def render_garage(request, state):
 
 @login_required
 @require_POST
+def api_save_current(request):
+    """
+    現在ガレージ画面で編集中の内容を「現在使用中(99)」の車体として直接保存・装備する（改修要件3）。
+    プリセット1〜5への追加登録は、この保存が成功した後にクライアント側のポップアップから
+    api_save_preset を呼び出すことで行う。
+    """
+    user = request.user
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({"ok": False, "error": "不正なリクエストです。"}, status=400)
+
+    ok, result = _validate_and_build_car_fields(user, data)
+    if not ok:
+        return JsonResponse({"ok": False, "error": result}, status=400)
+
+    current, _ = Car.objects.update_or_create(user=user, preset_number=Car.CURRENT_PRESET_NUMBER, defaults=result)
+    user.car = current
+    user.save(update_fields=["car"])
+    return JsonResponse({"ok": True})
+
+
+@login_required
+@require_POST
 def api_save_preset(request):
     user = request.user
     try:

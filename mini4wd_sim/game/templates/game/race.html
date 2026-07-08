@@ -84,7 +84,7 @@
     <!-- ── サーバーから渡されたレース設定（room.current_race_setup）。空の場合はオフラインデモとして動作する ── -->
     <script>
         window.__RACE_SETUP__ = {{ race_setup_json|safe }};
-        window.__ROOM_ID__ = {{ room_id|default:"null" }} ? "{{ room_id }}" : null;
+        window.__ROOM_ID__ = "{{ room_id }}";
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

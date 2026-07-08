@@ -5,6 +5,90 @@
     const STATE = window.__SHOP_STATE__;
     const cart = { colors: new Set(), skills: new Set(), presetSlot: false };
 
+    // ══════════════════════════════════════════════════════════════
+    //  左側3Dプレビュー（改修要件5）: 現在装備中の車体を表示するだけの簡易シーン
+    // ══════════════════════════════════════════════════════════════
+    (function initPreview() {
+        const canvas = document.getElementById('threeCanvas');
+        const viewport = document.getElementById('viewport');
+        if (!canvas || !viewport || typeof THREE === 'undefined') return;
+
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer.setClearColor(0x08080e);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x08080e, 0.012);
+        const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
+        camera.position.set(0, 1.7, 4.6);
+        camera.lookAt(0, 0.35, 0);
+
+        function onResize() {
+            const w = viewport.clientWidth, h = viewport.clientHeight;
+            renderer.setSize(w, h, false);
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+        }
+        onResize();
+        window.addEventListener('resize', onResize);
+
+        scene.add(new THREE.AmbientLight(0x202028, 1.8));
+        const keyLight = new THREE.DirectionalLight(0xffffff, 1.1);
+        keyLight.position.set(6, 9, 6);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.set(1024, 1024);
+        scene.add(keyLight);
+        const rimLight = new THREE.DirectionalLight(0x4a6fff, 0.4);
+        rimLight.position.set(-6, 3, -6);
+        scene.add(rimLight);
+
+        const platform = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.6, 0.08, 48), new THREE.MeshLambertMaterial({ color: 0x14141c }));
+        platform.position.y = -0.04; platform.receiveShadow = true; scene.add(platform);
+        const gridH = new THREE.GridHelper(40, 40, 0x0d0d1a, 0x0d0d1a); gridH.position.y = -0.08; scene.add(gridH);
+
+        function hexToInt(hex) { return parseInt((hex || '#888888').replace('#', ''), 16); }
+
+        let carMesh = null;
+        let rotY = 0.4, dragging = false, lastX = 0, autoSpin = true;
+
+        const pc = STATE.preview_car;
+        const nameEl = document.getElementById('carLabelName');
+        if (pc) {
+            carMesh = buildCarMesh(hexToInt(pc.color_1), hexToInt(pc.color_2), hexToInt(pc.color_3), pc.pattern, pc.mark_color);
+            carMesh.rotation.y = rotY;
+            scene.add(carMesh);
+            if (nameEl) {
+                nameEl.textContent = pc.car_name;
+                nameEl.style.color = '#' + hexToInt(pc.color_2).toString(16).padStart(6, '0');
+            }
+        } else if (nameEl) {
+            nameEl.textContent = '未装備';
+        }
+
+        canvas.addEventListener('pointerdown', e => { dragging = true; autoSpin = false; lastX = e.clientX; });
+        window.addEventListener('pointerup', () => { dragging = false; });
+        window.addEventListener('pointermove', e => {
+            if (!dragging) return;
+            const dx = e.clientX - lastX; lastX = e.clientX;
+            rotY += dx * 0.01;
+            if (carMesh) carMesh.rotation.y = rotY;
+        });
+        canvas.addEventListener('dblclick', () => { autoSpin = true; });
+
+        let lastTS = null;
+        function animate(ts) {
+            requestAnimationFrame(animate);
+            if (lastTS === null) lastTS = ts;
+            const dt = Math.min((ts - lastTS) / 1000, 0.05);
+            lastTS = ts;
+            if (autoSpin && carMesh) { rotY += dt * 0.35; carMesh.rotation.y = rotY; }
+            renderer.render(scene, camera);
+        }
+        animate(0);
+    })();
+
     function getCookie(name) {
         const m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
         return m ? decodeURIComponent(m[1]) : null;
