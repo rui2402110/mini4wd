@@ -55,3 +55,4 @@ python manage.py cleanup_old_rooms
 - race_result_report の詳細な再計算・検証は未実装（race_seed一致チェックのみ）
 - ホスト無応答時のタイムアウト処理は `race_consumer.start_report_timeout_timer` に
   骨組みを実装済みだが、本番運用に向けた再試験が必要
+1
