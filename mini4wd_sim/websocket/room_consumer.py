@@ -88,6 +88,7 @@ class RoomConsumer(JsonWebsocketConsumer):
             "request_start": self.handle_request_start,
             "chat_message": self.handle_chat_message,
             "leave_room": self.handle_leave_room,
+            "car_updated": self.handle_car_updated,
             "ping": self.handle_ping,
         }
         handler = handler_map.get(msg_type)
@@ -205,31 +206,22 @@ class RoomConsumer(JsonWebsocketConsumer):
     def handle_leave_room(self, payload):
         self.close(code=1000)
 
+    def handle_car_updated(self, payload):
+        """
+        ガレージのカスタムボタン(AJAX)で装備車体を変更した後、クライアントから
+        送られる通知。DBの最新User.carを反映するため単純に再ブロードキャストする
+        （改修要件2 3参照）。
+        """
+        self.broadcast_room_state()
+
     # ── 共通ヘルパー ──
     def broadcast_room_state(self):
         room = Room.objects.filter(room_id=self.room_id).first()
         if room is None:
             return
-        members = list(self.store.smembers(self.room_id))
-        ready_map = self.store.hgetall(self.room_id)
-        bots = self.store.get_bots(self.room_id)
-        bets = self.store.get_bets(self.room_id)
+        from websocket.broadcast_helpers import broadcast_room_state as _broadcast
 
-        # ホストは常時準備完了として扱う（改修要件4）。表示上もサーバーの判定と一致させる。
-        if room.host_user_id is not None:
-            ready_map[str(room.host_user_id)] = True
-
-        state = {
-            "members": members,
-            "bots": bots,
-            "ready_map": ready_map,
-            "bets": bets,
-            "status": room.status,
-            "host_user_id": room.host_user_id,
-        }
-        async_to_sync(self.channel_layer.group_send)(
-            self.group_name, {"type": "ws_send", "payload": {"type": "room_state", "payload": state}}
-        )
+        _broadcast(self.channel_layer, room)
 
     # ── group_send経由で受け取ったメッセージをそのままクライアントへ流す ──
     def ws_send(self, event):

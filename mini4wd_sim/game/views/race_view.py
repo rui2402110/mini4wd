@@ -1,10 +1,11 @@
 """
-game/views/race_view.py ── レース画面表示
+game/views/race_view.py ── レース画面表示（待機中〜レース〜結果まで、この1画面で完結する）
 
-race_consumer.send_race_setup() がRoom.current_race_setupへ保存した
-race_seed・car_configs・is_host情報をもとに、race.html を描画する。
-これにより、ゲームロジック自体（data.js/game.js等）を書き換えることなく、
-サーバー側で決定した車体構成をそのままクライアントへ渡せる。
+ロビー画面は設計書に存在しないため廃止（改修要件2）。部屋の作成/入室後は
+直接この画面へ遷移し、メンバー管理はrace.html内から room_consumer(ws/room/...) へ
+接続して行う。race_setup（車体構成・race_seed）はレース開始が確定した瞬間に
+race_consumer(ws/race/...) からWS経由で配信されるため、ここではページに
+埋め込まない（待機中に入室したメンバーにも正しく反映させるため）。
 """
 import json
 
@@ -22,13 +23,21 @@ def race_view(request, room_id):
     except Room.DoesNotExist:
         raise Http404("部屋が見つかりません。")
 
-    setup = room.current_race_setup or {}
     is_host = (room.host_user_id == request.user.user_id)
+
+    # パスワード付き部屋の場合、ホスト以外は一致確認が必要（?password=で照合）
+    need_password = False
+    if room.has_password and not is_host:
+        supplied = request.GET.get("password", "")
+        if supplied != room.password:
+            need_password = True
 
     context = {
         "room": room,
-        "race_setup_json": json.dumps(setup, ensure_ascii=False),
-        "is_host_json": json.dumps(is_host),
         "room_id": room_id,
+        "need_password": need_password,
+        "is_host_json": json.dumps(is_host),
+        "my_user_id_json": json.dumps(request.user.user_id),
+        "my_user_name_json": json.dumps(request.user.name),
     }
     return render(request, "game/race.html", context)

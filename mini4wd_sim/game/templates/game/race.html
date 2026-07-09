@@ -5,18 +5,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ミニ四駆シミュレーター - レース画面 v2.8</title>
+    <title>{{ room.room_name }} - ミニ四駆シミュレーター</title>
     <link rel="stylesheet" href="{% static 'game/style.css' %}">
 </head>
 
 <body class="race">
+{% if need_password %}
+    <div id="racePasswordGate">
+        <div id="racePasswordCard">
+            <h2>🔒 パスワードが必要です</h2>
+            <form method="get">
+                <input type="password" name="password" placeholder="部屋のパスワード" autofocus>
+                <button type="submit" class="btn" style="width:100%;">入室する</button>
+            </form>
+        </div>
+    </div>
+{% else %}
     <div id="header">
-        <div id="title">MINI<span>4WD</span> SIMULATOR<small>v2.8</small></div>
+        <div id="title">{{ room.room_name }}<small>MINI4WD SIMULATOR</small></div>
         <div id="controls">
-            <button id="boardBtn">🖥 CASTOM</button>
-            <button id="rankingBtn">🏆 RANKING</button>
-            <button id="resetBtn">RESET</button>
-            <button id="startBtn">START</button>
+            <button id="boardBtn">🔧 CUSTOM</button>
+            <button id="startBtn">準備完了</button>
         </div>
     </div>
 
@@ -47,7 +56,7 @@
             <div id="zoom-flash"></div>
         </div>
 
-        <!-- 車体データバッジ：順位順に並び替えて表示するサイドバー（実況パネルの左隣） -->
+        <!-- 車体データバッジ：メンバー一覧を兼ねる（順位順に並び替え・空き枠にBot追加ボタン。改修要件3） -->
         <div id="hud-rankings"></div>
 
         <!-- 実況パネル -->
@@ -81,15 +90,16 @@
         </div>
     </div>
 
-    <!-- ── サーバーから渡されたレース設定（room.current_race_setup）。空の場合はオフラインデモとして動作する ── -->
+    <!-- ── 部屋・ユーザー情報（車体構成自体はWS経由で配信されるため埋め込まない。改修要件2） ── -->
     <script>
-        window.__RACE_SETUP__ = {{ race_setup_json|safe }};
         window.__ROOM_ID__ = "{{ room_id }}";
+        window.__MY_USER_ID__ = {{ my_user_id_json|safe }};
+        window.__MY_USER_NAME__ = {{ my_user_name_json|safe }};
+        window.__IS_HOST__ = {{ is_host_json|safe }};
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="{% static 'game/data.js' %}"></script>
-    <script src="{% static 'game/race_online.js' %}"></script>
     <script src="{% static 'game/course.js' %}"></script>
     <script src="{% static 'game/car_view.js' %}"></script>
     <script src="{% static 'game/rode_view.js' %}"></script>
@@ -98,6 +108,8 @@
     <script src="{% static 'game/particle.js' %}"></script>
     <script src="{% static 'game/commentary.js' %}"></script>
     <script src="{% static 'game/game.js' %}"></script>
+    <script src="{% static 'game/race_room.js' %}"></script>
+{% endif %}
 </body>
 
 </html>

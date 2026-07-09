@@ -39,7 +39,7 @@
                     <div class="rn">{{ room.room_name }}</div>
                     <div class="meta">HOST: {{ room.host_user.name }} / {{ room.created_at|date:"m/d H:i" }}{% if room.has_password %} / 🔒パス付き{% endif %}</div>
                 </div>
-                <a class="btn" href="{% url 'rooms:lobby' room.room_id %}">入室 ▶</a>
+                <a class="btn" href="{% url 'game:race' room.room_id %}">入室 ▶</a>
             </div>
             {% empty %}
             <p class="hint-text">現在公開されている部屋はありません。新しく作成しましょう。</p>

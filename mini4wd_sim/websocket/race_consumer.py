@@ -21,7 +21,6 @@ from channels.generic.websocket import JsonWebsocketConsumer
 from django.conf import settings
 
 from accounts.models.user_model import User
-from garage.models.car_model import Car
 from rooms.models.room_model import Room
 from websocket.state_store import get_store
 
@@ -49,9 +48,33 @@ class RaceConsumer(JsonWebsocketConsumer):
         async_to_sync(self.channel_layer.group_add)(self.group_name, self.channel_name)
         self.accept()
 
+        # race_consumer への接続は「race_starting を受け取った直後」にのみ行われる想定。
+        # 待機中(WAITING)のまま繋いだ場合は安全側に倒し、何もせず案内だけ返す。
+        if self.room.status != Room.STATUS_RACING:
+            self.send_json({"type": "error", "payload": {"code": "NOT_RACING", "message": "まだレースが開始されていません。"}})
+            self.close(code=4005)
+            return
+
         if self.room.current_race_setup is None:
             self._generate_race_setup()
             self.start_report_timeout_timer()
+        else:
+            self.room = Room.objects.get(room_id=self.room_id)  # 他クライアントの生成後の最新状態を取得
+
+        # 生成者・後発者いずれも、自分宛にrace_setupを配信する（改修要件2・3参照:
+        # ページ埋め込みではなくWSで配ることで、遅れて入室したメンバーにも
+        # 正しいcar_configsが届く）。
+        self.send_json({"type": "race_setup", "payload": self._build_client_payload()})
+
+    def _build_client_payload(self):
+        setup = self.room.current_race_setup or {}
+        return {
+            "race_seed": setup.get("race_seed"),
+            "car_configs": setup.get("car_configs", []),
+            "bets": setup.get("bets", {}),
+            "is_host": self.room.host_user_id == self.user.user_id,
+            "my_participant_id": self.user.user_id,
+        }
 
     def disconnect(self, close_code):
         async_to_sync(self.channel_layer.group_discard)(self.group_name, self.channel_name)
@@ -71,40 +94,10 @@ class RaceConsumer(JsonWebsocketConsumer):
     #  race_setup 生成（8章 send_race_setup 相当）
     # ══════════════════════════════════════════════════════════════
     def _generate_race_setup(self):
-        from game.bot_factory import create_bot_car  # 遅延importで循環参照を回避
+        from game.race_setup_builder import build_car_configs
 
-        members = list(self.store.smembers(self.room_id))
-        bots_ids = self.store.get_bots(self.room_id)
         bets = self.store.get_bets(self.room_id)
-
-        car_configs = []
-        for uid in members:
-            user = User.objects.filter(user_id=int(uid)).select_related("car").first()
-            if user is None:
-                continue
-            car = user.car or Car.objects.filter(user=user, preset_number=Car.CURRENT_PRESET_NUMBER).first()
-            if car is None:
-                continue
-            car_configs.append({
-                "participant_id": user.user_id,
-                "is_bot": False,
-                "car_name": car.car_name,
-                "color_1": car.color_1.color_code,
-                "color_2": car.color_2.color_code,
-                "color_3": car.color_3.color_code,
-                "main_skill": car.main_skill_id,
-                "sub_skill_1": car.sub_skill_1_id,
-                "sub_skill_2": car.sub_skill_2_id,
-                "car_type": car.car_type_id,
-            })
-
-        for bot_id in bots_ids:
-            bot_car = next((b for b in (self.room.bot_list or []) if b.get("bot_id") == bot_id), None) or create_bot_car(bot_id)
-            bot_car = dict(bot_car)
-            bot_car["participant_id"] = bot_id
-            bot_car["is_bot"] = True
-            car_configs.append(bot_car)
-
+        car_configs = build_car_configs(self.room, self.store)
         race_seed = random.getrandbits(48)
 
         self.room.current_race_setup = {
@@ -133,6 +126,8 @@ class RaceConsumer(JsonWebsocketConsumer):
                 group_name,
                 {"type": "ws_send", "payload": {"type": "race_error", "payload": {"message": "ホストが結果を報告しなかったため、レースを無効化しました。"}}},
             )
+            from websocket.broadcast_helpers import broadcast_room_state
+            broadcast_room_state(channel_layer, room)
 
         timer = threading.Timer(timeout_sec, _on_timeout)
         timer.daemon = True
@@ -217,6 +212,9 @@ class RaceConsumer(JsonWebsocketConsumer):
         room.bot_list = []
         room.save(update_fields=["status", "current_race_setup", "bot_list"])
         self.store.set_bots(self.room_id, [])
+
+        from websocket.broadcast_helpers import broadcast_room_state
+        broadcast_room_state(self.channel_layer, room)
 
         async_to_sync(self.channel_layer.group_send)(
             self.group_name,

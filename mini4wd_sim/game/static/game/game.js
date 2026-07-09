@@ -215,7 +215,7 @@
         }
 
         const CARS = CAR_CONFIGS.map((cfg, i) => new RaceCar(cfg, i));
-        const playerCarRef = CARS.find(c => c.id === PLAYER_CAR_ID);
+        let playerCarRef = CARS.find(c => c.id === PLAYER_CAR_ID);
 
         // ── プレイヤー・賭けシステム（PLAYERS等のマスターデータは data.js） ──
         function playerColor(carId) {
@@ -249,6 +249,7 @@
             });
 
             const userPlayer = PLAYERS.find(p => p.isUser);
+            if (!userPlayer) return; // 初期ロード時点ではPLAYERSが空（race_room.js がroom_state受信後に再構築する）
             const betInput = document.getElementById(`bet-input-${userPlayer.id}`);
             if (betInput) {
                 const commitBet = () => {
@@ -349,26 +350,11 @@
             setBetInputsLocked(false);
         }
 
-        elStart.addEventListener('click', doActualStartRace);
-        elReset.addEventListener('click', resetRace);
-        document.getElementById('boardBtn').addEventListener('click', () => {
-            // 同じディレクトリの garage.html を新しいタブで開く
-            try {
-                const base = location.href.substring(0, location.href.lastIndexOf('/') + 1);
-                window.open(base + 'garage.html', '_blank', 'noopener');
-            } catch (e) {
-                alert('カスタマイズガレージ (garage.html) を同じフォルダに配置して開いてください。');
-            }
-        });
-        document.getElementById('rankingBtn').addEventListener('click', () => {
-            // 同じディレクトリの rankings.html を新しいタブで開く
-            try {
-                const base = location.href.substring(0, location.href.lastIndexOf('/') + 1);
-                window.open(base + 'rankings.html', '_blank', 'noopener');
-            } catch (e) {
-                alert('レートランキング (rankings.html) を同じフォルダに配置して開いてください。');
-            }
-        });
+        // ── ヘッダーボタンの配線は race_room.js（改修要件3のロビー統合ブリッジ）が行う。
+        //    #resetBtn / #rankingBtn は撤去済み、#boardBtn はAJAXポップアップに、
+        //    #startBtn は「準備完了/レース開始」ボタンとして再利用される。
+        //    doActualStartRace() / resetRace() 自体はここでは呼び出さず、
+        //    race_room.js からサーバーの合図(race_starting等)に応じて呼び出す。
 
         function doActualStartRace() {
             raceState = 'countdown'; cdTimer = 0; lastCDVal = 3;

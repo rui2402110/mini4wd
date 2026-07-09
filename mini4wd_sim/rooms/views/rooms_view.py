@@ -1,11 +1,12 @@
 """
-rooms/views/rooms_view.py ── 部屋探し・部屋作成・部屋ロビー画面（5-4参照）
+rooms/views/rooms_view.py ── 部屋探し・部屋作成画面（5-4参照）
 
-リアルタイムな入室者・準備状態はwebsocket/room_consumer.py(Redis)側で管理するため、
-本ビューはDB上の部屋一覧の検索・作成・入室可否判定のみを担当する。
+ロビー画面は設計書に存在しないため廃止（改修要件2）。作成・入室のいずれも
+直接 game:race （race.html）へ遷移する。メンバー管理はrace.html内から
+websocket/room_consumer.py(Redis)へ接続して行う。
 """
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
 
 from rooms.forms import RoomCreateForm
 from rooms.models.room_model import Room
@@ -38,18 +39,4 @@ def create_room_view(request):
         is_public=form.cleaned_data["is_public"],
         password=form.cleaned_data.get("password") or None,
     )
-    return redirect("rooms:lobby", room_id=room.room_id)
-
-
-@login_required
-def room_lobby_view(request, room_id):
-    room = get_object_or_404(Room, room_id=room_id)
-    if room.status == Room.STATUS_RACING:
-        return redirect("game:race", room_id=room.room_id)
-
-    if room.has_password:
-        supplied = request.GET.get("password", "")
-        if supplied != room.password and room.host_user_id != request.user.user_id:
-            return render(request, "rooms/lobby.html", {"room": room, "need_password": True})
-
-    return render(request, "rooms/lobby.html", {"room": room, "need_password": False})
+    return redirect("game:race", room_id=room.room_id)

@@ -72,6 +72,30 @@
             box-shadow: 0 0 14px #00ff8840;
         }
 
+        /* ══════════════════════════════════════════════════════════════════
+           共通 .btn クラス（garage/style.cssと同じ定義。パスワードゲート等の
+           汎用ボタンで使用）
+           ══════════════════════════════════════════════════════════════════ */
+        .btn {
+            padding: 9px 22px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 2px solid #00ff88;
+            background: transparent;
+            color: #00ff88;
+            cursor: pointer;
+            transition: all 0.18s;
+            display: inline-block;
+        }
+        .btn:hover { background: #00ff8820; box-shadow: 0 0 14px #00ff8840; }
+        .btn.alt { border-color: #0099ff; color: #0099ff; }
+        .btn.alt:hover { background: #0099ff20; box-shadow: 0 0 14px #0099ff40; }
+        .btn.danger { border-color: #ff3366; color: #ff3366; }
+        .btn.danger:hover { background: #ff336620; box-shadow: 0 0 14px #ff336640; }
+        .btn:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+
 
         /* ── レース画面(race.html)専用のヘッダーボタン ── */
         #startBtn {
@@ -1628,6 +1652,108 @@
             pointer-events: none;
         }
 /* ══════════════════════════════════════════════════════════════════
+   改修要件2・3: ロビー統合（準備完了/レース開始ボタン・Bot追加枠・
+   プリセット選択ポップアップ）関連の追加スタイル
+   ══════════════════════════════════════════════════════════════════ */
+
+/* 準備完了/レース開始ボタン（#startBtnの基本スタイルに状態別の色を足す） */
+#startBtn.is-ready { border-color: #00ff88; color: #00ff88; background: #00ff8815; }
+#startBtn.host-start { border-color: #ffdd33; color: #ffdd33; }
+#startBtn.host-start:hover { background: #ffdd3320; box-shadow: 0 0 14px #ffdd3340; }
+
+/* メンバー一覧の空き枠（Bot追加ボタン／空欄表示） */
+body.race .car-panel.empty-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 64px;
+    opacity: 0.8;
+    border-style: dashed;
+}
+.add-bot-btn {
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+    font-size: 12px;
+    border: 1px dashed #0099ff;
+    background: transparent;
+    color: #0099ff;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.add-bot-btn:hover { background: #0099ff15; }
+.empty-slot-label { font-size: 11px; color: #445; letter-spacing: 1px; }
+
+/* Bot車体パネルのホスト専用削除ボタン */
+.bot-remove-btn {
+    margin-top: 6px;
+    width: 100%;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    border: 1px solid #442222;
+    background: transparent;
+    color: #ff6666;
+    padding: 4px 0;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.bot-remove-btn:hover { background: #ff333320; border-color: #ff5566; }
+
+/* プリセット選択ポップアップ（カスタムボタン: 改修要件3） */
+#racePresetOverlay {
+    position: fixed; inset: 0;
+    background: #000000a0;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999;
+}
+#racePresetModal {
+    width: 420px; max-width: 92vw;
+    background: #0e0e16;
+    border: 1px solid #223;
+    padding: 26px 24px;
+    box-shadow: 0 0 40px #000000c0;
+}
+#racePresetModal h3 {
+    font-size: 14px; letter-spacing: 2px; color: #00ff88;
+    margin-bottom: 18px; text-align: center;
+}
+#racePresetGrid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 10px; margin-bottom: 18px;
+}
+.preset-pick-btn {
+    padding: 14px 8px;
+    background: #050508;
+    border: 2px solid #223;
+    color: #889;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+}
+.preset-pick-btn:hover:not(:disabled) { border-color: #0099ff; color: #0099ff; }
+.preset-pick-btn.filled { border-color: #334; color: #ccc; }
+.preset-pick-btn.locked, .preset-pick-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.preset-pick-btn .pn { font-size: 10px; letter-spacing: 1px; margin-bottom: 4px; }
+.preset-pick-btn .pname { font-size: 12px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* パスワード入力（部屋に鍵がかかっている場合、race.html内で直接表示） */
+#racePasswordGate {
+    position: fixed; inset: 0;
+    background: #08080e;
+    display: flex; align-items: center; justify-content: center;
+}
+#racePasswordCard {
+    width: 340px; background: #0e0e16; border: 1px solid #223; padding: 28px 24px;
+}
+#racePasswordCard h2 { font-size: 15px; color: #00ff88; letter-spacing: 2px; margin-bottom: 16px; text-align: center; }
+#racePasswordCard input {
+    width: 100%; padding: 10px; margin-bottom: 14px;
+    background: #050508; border: 1px solid #223; color: #e0e0e0; font-family: 'Courier New', monospace;
+}
+
+/* ══════════════════════════════════════════════════════════════════
    スクロールバー共通デザイン（黒・四角。ダークUIに合わせて統一） ── 改修要件6
    ══════════════════════════════════════════════════════════════════ */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -1636,4 +1762,5 @@
 ::-webkit-scrollbar-thumb:hover { background: #333333; }
 ::-webkit-scrollbar-corner { background: #000000; }
 * { scrollbar-width: thin; scrollbar-color: #222222 #000000; }
+
 

@@ -90,33 +90,28 @@
         //                   こちらもカウントダウン終了と同時に判明する。
         //
         //   設定可能なスキルID一覧は SKILLS_DATA を参照。
-        const CAR_CONFIGS = [
-            { id: 1, name: "THUNDER", bodyCol: 0x006e40, accentCol: 0x00ee77, stripeCol: 0xdddddd, laneOff: 3.6, baseSpd: 0.002200, trailCol: 0x00ff88, type: 'EARLY', markCol: null, mainSkill: 'leaky_battery', subSkills: ['poison_chihuahua', 'self_destruct_emp'], randomSkills: [null, null] },
-            { id: 2, name: "FALCON", bodyCol: 0x003d80, accentCol: 0xff7700, stripeCol: 0xeeeeee, laneOff: -1.2, baseSpd: 0.002200, trailCol: 0x0099ff, type: 'STEADY', markCol: null, mainSkill: 'never_motor', subSkills: ['offroad_tire', 'leaky_battery'], randomSkills: [null, null] },
-            { id: 3, name: "FIREFOX", bodyCol: 0xcd5c5c, accentCol: 0xff1493, stripeCol: 0xffd700, laneOff: 1.2, baseSpd: 0.002200, trailCol: 0xff0077, type: 'LATE', markCol: null, mainSkill: 'dynamo_gear', subSkills: ['offroad_tire', 'reversal_motor'], randomSkills: [null, null] },
-            { id: 4, name: "SHADOW", bodyCol: 0x3a005c, accentCol: 0xbd00ff, stripeCol: 0x111111, laneOff: -3.6, baseSpd: 0.002200, trailCol: 0xbd00ff, type: 'EARLY', markCol: null, mainSkill: 'dynamo_gear', subSkills: ['leaky_battery', 'boost_lap5'], randomSkills: [null, null] },
-        ];
+        //
+        //   ── オンライン統合について ──
+        //   race.htmlは常時オンライン対戦専用ページであり、CAR_CONFIGS/PLAYERSは
+        //   room_consumer(ws/room/...)のroom_state・race_consumer(ws/race/...)の
+        //   race_setupから配信される実データで race_room.js が構築する
+        //   （game/static/game/race_room.js の rebuildCars 参照）。
+        //   そのためここではデモ用の固定値は持たず、空配列で初期化する。
+        const CAR_CONFIGS = [];
 
 
         // ── レースルール ──
         const TOTAL_LAPS = 5;
 
         // ══════════════════════════════════════════════════════════════════
-        //  プレイヤー / 賭け・レートシステム（デモ用ローカル実装）
+        //  プレイヤー / 賭け・レートシステム
         // ══════════════════════════════════════════════════════════════════
-        //  ・プレイヤー1 = 車体ID 1 (THUNDER) = 自分の車体
-        //  ・プレイヤー2〜4はCPU相当のローカル固定値（賭け金は一律100固定）
-        //  ・レートは初期値1500、着順により固定変動（1位+15 / 2位+5 / 3位-5 / 4位-15）
-        //  ・賭け金は0〜1000。合計賭け金のうち1位75%・2位15%を払い戻し、
-        //    残り10%は手数料として消滅（今回は消滅させるのみで誰かに渡さない）
-        const PLAYER_CAR_ID = 1;
+        //  ・PLAYER_CAR_IDはrace_room.jsが room_state 受信のたびに再設定する
+        //    （letで宣言し、別スクリプトタグから再代入できるようにしている）。
+        //  ・PLAYERSも同様にrace_room.jsが実データで構築するため空配列で初期化する。
+        let PLAYER_CAR_ID = null;
 
-        const PLAYERS = [
-            { id: 1, carId: 1, name: 'player1(YOU)', rate: 1500, wins: 0, bet: 100, isUser: true },
-            { id: 2, carId: 2, name: 'player2', rate: 1500, wins: 0, bet: 100, isUser: false },
-            { id: 3, carId: 3, name: 'player3', rate: 1500, wins: 0, bet: 100, isUser: false },
-            { id: 4, carId: 4, name: 'player4', rate: 1500, wins: 0, bet: 100, isUser: false },
-        ];
+        const PLAYERS = [];
 
         const RATE_DELTA_BY_RANK = [15, 5, -5, -15];
         const PAYOUT_RATIO_BY_RANK = [0.75, 0.15, 0, 0]; // 残り10%は手数料として消滅
