@@ -96,15 +96,7 @@
             });
         }
 
-        const chatInput = document.getElementById('chat-input');
-        const chatSend = document.getElementById('chat-send');
-
-        function sendChat() {
-            const txt = chatInput.value.trim();
-            if (!txt) return;
-            addComment(`👤 プレイヤー: ${txt}`, 'player');
-            chatInput.value = '';
-        }
-
-        chatSend.addEventListener('click', sendChat);
-        chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+        // ── チャット送受信は race_room.js（WebSocket経由）に一本化した。
+        //    以前はここでローカルにコメントを追加してから入力欄をクリアしていたが、
+        //    race_room.js側の送信ハンドラより先にクリアしてしまい、サーバーに
+        //    メッセージが届かない不具合があったため撤去した（改修要件1）。

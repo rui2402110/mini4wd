@@ -1656,6 +1656,20 @@
    プリセット選択ポップアップ）関連の追加スタイル
    ══════════════════════════════════════════════════════════════════ */
 
+/* 退出ボタン（改修要件3-3: CUSTOMボタンの隣に配置） */
+#leaveBtn {
+    padding: 7px 18px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    border: 2px solid #556;
+    background: transparent;
+    color: #889;
+    cursor: pointer;
+    transition: all 0.18s;
+}
+#leaveBtn:hover { border-color: #ff5566; color: #ff5566; background: #ff556615; }
+
 /* 準備完了/レース開始ボタン（#startBtnの基本スタイルに状態別の色を足す） */
 #startBtn.is-ready { border-color: #00ff88; color: #00ff88; background: #00ff8815; }
 #startBtn.host-start { border-color: #ffdd33; color: #ffdd33; }

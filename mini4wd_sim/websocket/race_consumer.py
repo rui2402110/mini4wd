@@ -216,6 +216,12 @@ class RaceConsumer(JsonWebsocketConsumer):
         from websocket.broadcast_helpers import broadcast_room_state
         broadcast_room_state(self.channel_layer, room)
 
+        # channels_redis はmsgpack(strict_map_key=True)でシリアライズするため、
+        # dictのキーは必ず文字列である必要がある（user_idがintのままだと
+        # 「int is not allowed for map key」で例外になる）。WS配信直前に変換する。
+        rate_changes_out = {str(k): v for k, v in rate_deltas.items()}
+        bet_settlement_out = {str(k): v for k, v in bet_settlement.items()}
+
         async_to_sync(self.channel_layer.group_send)(
             self.group_name,
             {
@@ -225,8 +231,8 @@ class RaceConsumer(JsonWebsocketConsumer):
                     "payload": {
                         "result_id": result.result_id,
                         "rankings": normalized_ranking,
-                        "rate_changes": rate_deltas,
-                        "bet_settlement": bet_settlement,
+                        "rate_changes": rate_changes_out,
+                        "bet_settlement": bet_settlement_out,
                     },
                 },
             },

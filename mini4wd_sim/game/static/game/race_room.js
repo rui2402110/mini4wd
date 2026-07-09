@@ -25,6 +25,7 @@
     let raceStarted = false;
     let lastCarConfigs = null; // 差分検知用（同じ内容ならrebuildCarsを呼ばない）
     let lastMemberKey = '';
+    let latestRoomState = null; // レース終了後5秒遅延リセット時に使う直近のroom_state
 
     const LANE_OFFSETS = [3.6, -1.2, 1.2, -3.6];
 
@@ -77,8 +78,9 @@
         CARS.length = 0;
     }
 
-    function rebuildCars(rawConfigs, bets) {
+    function rebuildCars(rawConfigs, bets, interactive) {
         if (typeof RaceCar === 'undefined' || typeof CARS === 'undefined') return;
+        if (interactive === undefined) interactive = true;
 
         const newConfigs = toRaceCarConfigs(rawConfigs, MY_USER_ID);
         clearSceneCars();
@@ -93,6 +95,11 @@
         if (typeof playerCarRef !== 'undefined') {
             playerCarRef = CARS.find(c => c.id === PLAYER_CAR_ID);
         }
+
+        // 改修要件4: 新規生成した車体はコンストラクタ時点ではmesh.positionが
+        // 未設定（原点=画面中央付近）のままなので、initPos()でコースのスタート
+        // 地点(t=0のlanePos)へ明示的に配置する。
+        if (typeof initPos === 'function') initPos();
 
         PLAYERS.length = 0;
         newConfigs.forEach(c => {
@@ -114,6 +121,8 @@
         if (typeof updateHUDRankOrder === 'function' && typeof getRankings === 'function') {
             updateHUDRankOrder(getRankings());
         }
+
+        if (!interactive) return; // 改修要件6: レース中はBot追加/削除UIを一切出さない
 
         // Botの車体パネルにホスト専用の削除ボタンを付与
         if (isHost) {
@@ -261,6 +270,17 @@
     }
 
     // ══════════════════════════════════════════════════════════════
+    //  退出ボタン（改修要件3-3: CUSTOMボタンの隣に配置し、部屋検索画面へ戻る）
+    // ══════════════════════════════════════════════════════════════
+    const leaveBtn = document.getElementById('leaveBtn');
+    if (leaveBtn) {
+        leaveBtn.addEventListener('click', () => {
+            sendRoom('leave_room', {});
+            window.location.href = '/rooms/';
+        });
+    }
+
+    // ══════════════════════════════════════════════════════════════
     //  チャット（room_consumer経由に統一）
     // ══════════════════════════════════════════════════════════════
     function wireChat() {
@@ -297,11 +317,12 @@
 
         if (type === 'room_state') {
             isHost = payload.host_user_id === MY_USER_ID;
+            latestRoomState = payload;
             if (!raceStarted) {
                 const memberKey = JSON.stringify(payload.car_configs.map(c => c.participant_id));
                 if (memberKey !== lastMemberKey) {
                     lastMemberKey = memberKey;
-                    rebuildCars(payload.car_configs, payload.bets);
+                    rebuildCars(payload.car_configs, payload.bets, true);
                 }
                 updateReadyStartButton(payload);
             }
@@ -338,12 +359,11 @@
                 raceStarted = true;
                 isHost = !!payload.is_host;
                 window.__RACE_SEED__ = payload.race_seed;
-                rebuildCars(payload.car_configs, payload.bets);
+                rebuildCars(payload.car_configs, payload.bets, false); // 改修要件6: レース中はBot操作UIを出さない
                 if (readyStartBtn) readyStartBtn.style.display = 'none';
                 if (typeof doActualStartRace === 'function') doActualStartRace();
                 pollFinish();
             } else if (type === 'race_finished') {
-                raceStarted = false;
                 if (typeof addComment === 'function') {
                     let txt = '📡 サーバーが結果を確定しました:<br>';
                     (payload.rankings || []).forEach((pid, i) => {
@@ -358,15 +378,30 @@
                         txt += '<br>';
                     });
                     addComment(txt, 'finish');
+                    addComment('⏱ 5秒後に次のレースの準備画面へ戻ります...', 'system');
                 }
-                if (readyStartBtn) { readyStartBtn.style.display = ''; readyStartBtn.disabled = false; }
-                lastMemberKey = ''; // 次回のroom_stateで確実に再構築させる
-                if (typeof resetRace === 'function') resetRace();
+                // 改修要件2: 結果画面を5秒間表示してから、次のレースへシームレスに移行する
+                setTimeout(() => {
+                    raceStarted = false;
+                    if (typeof resetRace === 'function') resetRace();
+                    if (readyStartBtn) { readyStartBtn.style.display = ''; readyStartBtn.disabled = false; }
+                    lastMemberKey = '';
+                    if (latestRoomState) {
+                        rebuildCars(latestRoomState.car_configs, latestRoomState.bets, true);
+                        lastMemberKey = JSON.stringify(latestRoomState.car_configs.map(c => c.participant_id));
+                        updateReadyStartButton(latestRoomState);
+                    }
+                }, 5000);
             } else if (type === 'race_error') {
                 if (typeof addComment === 'function') addComment(`⚠️ ${payload.message || 'レースが無効になりました。'}`, 'warning');
                 raceStarted = false;
                 if (readyStartBtn) { readyStartBtn.style.display = ''; readyStartBtn.disabled = false; }
                 if (typeof resetRace === 'function') resetRace();
+                if (latestRoomState) {
+                    lastMemberKey = JSON.stringify(latestRoomState.car_configs.map(c => c.participant_id));
+                    rebuildCars(latestRoomState.car_configs, latestRoomState.bets, true);
+                    updateReadyStartButton(latestRoomState);
+                }
             }
         });
 

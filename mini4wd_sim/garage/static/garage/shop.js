@@ -1,27 +1,45 @@
 // garage/static/garage/shop.js ── ショップ画面のカート選択・まとめ買いロジック（9-6参照）
+// 改修要件7: 最後にクリックしたカラーを左側の3Dプレビューへ即時反映する
 'use strict';
 
 (function () {
     const STATE = window.__SHOP_STATE__;
     const cart = { colors: new Set(), skills: new Set(), presetSlot: false };
 
+    function hexToInt(hex) { return parseInt((hex || '#888888').replace('#', ''), 16); }
+
+    // 現在プレビューに反映されている色（初期値は装備中の車体）。
+    // 改修要件7: 各カラー枠（COLOR1/2/3）で最後にクリックした色をここに保持し、
+    // クリックのたびにプレビューの車体を作り直して反映する。
+    const pc = STATE.preview_car;
+    const previewColors = {
+        color_1: (pc && pc.color_1) || '#888888',
+        color_2: (pc && pc.color_2) || '#ffffff',
+        color_3: (pc && pc.color_3) || '#dddddd',
+        pattern: (pc && pc.pattern) || null,
+        mark_color: pc ? pc.mark_color : null,
+    };
+
     // ══════════════════════════════════════════════════════════════
-    //  左側3Dプレビュー（改修要件5）: 現在装備中の車体を表示するだけの簡易シーン
+    //  左側3Dプレビュー（改修要件5・7）
     // ══════════════════════════════════════════════════════════════
-    (function initPreview() {
-        const canvas = document.getElementById('threeCanvas');
-        const viewport = document.getElementById('viewport');
+    const canvas = document.getElementById('threeCanvas');
+    const viewport = document.getElementById('viewport');
+    let scene = null, camera = null, renderer = null, carMesh = null;
+    let rotY = 0.4, dragging = false, lastX = 0, autoSpin = true;
+
+    function initPreview() {
         if (!canvas || !viewport || typeof THREE === 'undefined') return;
 
-        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
         renderer.setClearColor(0x08080e);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 
-        const scene = new THREE.Scene();
+        scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x08080e, 0.012);
-        const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
+        camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
         camera.position.set(0, 1.7, 4.6);
         camera.lookAt(0, 0.35, 0);
 
@@ -48,24 +66,7 @@
         platform.position.y = -0.04; platform.receiveShadow = true; scene.add(platform);
         const gridH = new THREE.GridHelper(40, 40, 0x0d0d1a, 0x0d0d1a); gridH.position.y = -0.08; scene.add(gridH);
 
-        function hexToInt(hex) { return parseInt((hex || '#888888').replace('#', ''), 16); }
-
-        let carMesh = null;
-        let rotY = 0.4, dragging = false, lastX = 0, autoSpin = true;
-
-        const pc = STATE.preview_car;
-        const nameEl = document.getElementById('carLabelName');
-        if (pc) {
-            carMesh = buildCarMesh(hexToInt(pc.color_1), hexToInt(pc.color_2), hexToInt(pc.color_3), pc.pattern, pc.mark_color);
-            carMesh.rotation.y = rotY;
-            scene.add(carMesh);
-            if (nameEl) {
-                nameEl.textContent = pc.car_name;
-                nameEl.style.color = '#' + hexToInt(pc.color_2).toString(16).padStart(6, '0');
-            }
-        } else if (nameEl) {
-            nameEl.textContent = '未装備';
-        }
+        refreshPreviewMesh();
 
         canvas.addEventListener('pointerdown', e => { dragging = true; autoSpin = false; lastX = e.clientX; });
         window.addEventListener('pointerup', () => { dragging = false; });
@@ -87,7 +88,37 @@
             renderer.render(scene, camera);
         }
         animate(0);
-    })();
+    }
+
+    // 改修要件7: previewColorsの内容でプレビュー車体を作り直す
+    function refreshPreviewMesh() {
+        if (!scene || typeof buildCarMesh !== 'function') return;
+        if (carMesh) { scene.remove(carMesh); carMesh = null; }
+
+        carMesh = buildCarMesh(
+            hexToInt(previewColors.color_1),
+            hexToInt(previewColors.color_2),
+            hexToInt(previewColors.color_3),
+            previewColors.pattern,
+            previewColors.mark_color
+        );
+        carMesh.rotation.y = rotY;
+        scene.add(carMesh);
+
+        const nameEl = document.getElementById('carLabelName');
+        if (nameEl) {
+            nameEl.textContent = (pc && pc.car_name) || 'PREVIEW';
+            nameEl.style.color = '#' + hexToInt(previewColors.color_2).toString(16).padStart(6, '0');
+        }
+    }
+
+    function setPreviewColor(colorType, colorCode) {
+        // color_type: "COLOR1" | "COLOR2" | "COLOR3"
+        const key = { COLOR1: 'color_1', COLOR2: 'color_2', COLOR3: 'color_3' }[colorType];
+        if (!key) return;
+        previewColors[key] = colorCode;
+        refreshPreviewMesh();
+    }
 
     function getCookie(name) {
         const m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
@@ -125,14 +156,15 @@
                 <div class="item-name">${c.color_type} ${c.color_code}</div>
                 ${c.owned ? '<div class="owned-badge">所持済み</div>' : `<div class="item-price">${c.price.toLocaleString()} en</div>`}
             `;
-            if (!c.owned) {
-                el.addEventListener('click', () => {
-                    if (cart.colors.has(c.color_id)) cart.colors.delete(c.color_id);
-                    else cart.colors.add(c.color_id);
-                    el.classList.toggle('selected');
-                    updateCartSummary();
-                });
-            }
+            // 改修要件7: 所持・未所持を問わず、クリックしたカラーは常にプレビューへ反映する
+            el.addEventListener('click', () => {
+                setPreviewColor(c.color_type, c.color_code);
+                if (c.owned) return;
+                if (cart.colors.has(c.color_id)) cart.colors.delete(c.color_id);
+                else cart.colors.add(c.color_id);
+                el.classList.toggle('selected');
+                updateCartSummary();
+            });
             colorGrid.appendChild(el);
         });
     }
@@ -206,6 +238,7 @@
     });
 
     enBalanceEl.textContent = currentEn.toLocaleString();
+    initPreview();
     renderColors();
     renderSkills();
     renderPresetSlot();

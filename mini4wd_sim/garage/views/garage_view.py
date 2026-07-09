@@ -81,6 +81,22 @@ def render_garage(request, state):
 
 
 @login_required
+def api_list_presets(request):
+    """
+    race.html の CUSTOM ボタン用ポップアップが使う軽量エンドポイント（改修要件3）。
+    プリセット1〜5の内容と、開放済みプリセット番号の一覧をJSONで返す。
+    """
+    user = request.user
+    presets = {}
+    for c in Car.objects.filter(user=user, preset_number__in=[1, 2, 3, 4, 5]):
+        presets[c.preset_number] = _serialize_car(c)
+    return JsonResponse({
+        "presets": presets,
+        "unlocked": _unlocked_preset_numbers(user),
+    })
+
+
+@login_required
 @require_POST
 def api_save_current(request):
     """
