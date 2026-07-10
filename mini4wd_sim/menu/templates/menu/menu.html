@@ -265,6 +265,33 @@
 
 <body data-authenticated="true" data-username="{{ request.user.name|default:'PILOT' }}">
     {% csrf_token %}
+    {% if bonus_en > 0 %}
+    <div id="loginBonusToast">🎁 ログインボーナス +{{ bonus_en }} en 獲得！</div>
+    <style>
+        #loginBonusToast {
+            position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+            z-index: 9999;
+            padding: 12px 26px;
+            background: #0e0e16;
+            border: 1px solid #ffdd33;
+            color: #ffdd33;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            letter-spacing: 1px;
+            box-shadow: 0 0 24px #ffdd3350;
+            animation: loginBonusFade 4.5s ease forwards;
+        }
+        @keyframes loginBonusFade {
+            0% { opacity: 0; transform: translate(-50%, -10px); }
+            10% { opacity: 1; transform: translate(-50%, 0); }
+            85% { opacity: 1; }
+            100% { opacity: 0; transform: translate(-50%, -10px); }
+        }
+    </style>
+    <script>
+        setTimeout(() => { const t = document.getElementById('loginBonusToast'); if (t) t.remove(); }, 5000);
+    </script>
+    {% endif %}
     <div id="app">
         <div id="left-panel">
             <div id="window-grid"></div>

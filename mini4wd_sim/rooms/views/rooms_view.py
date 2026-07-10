@@ -15,7 +15,9 @@ from rooms.models.room_model import Room
 @login_required
 def rooms_list_view(request):
     q = request.GET.get("q", "").strip()
-    rooms = Room.objects.filter(status=Room.STATUS_WAITING, is_public=True).order_by("-created_at")
+    # 「非公開」はパスワードが無ければ入室できないという意味であり、一覧から
+    # 隠すという意味ではない（改修要件3）。is_publicでの絞り込みは行わない。
+    rooms = Room.objects.filter(status=Room.STATUS_WAITING).order_by("-created_at")
     if q:
         rooms = rooms.filter(room_name__icontains=q)
 
@@ -30,13 +32,12 @@ def create_room_view(request):
 
     form = RoomCreateForm(request.POST)
     if not form.is_valid():
-        rooms = Room.objects.filter(status=Room.STATUS_WAITING, is_public=True).order_by("-created_at")[:100]
+        rooms = Room.objects.filter(status=Room.STATUS_WAITING).order_by("-created_at")[:100]
         return render(request, "rooms/rooms.html", {"rooms": rooms, "form": form, "query": ""})
 
     room = Room.objects.create(
         host_user=request.user,
         room_name=form.cleaned_data["room_name"],
-        is_public=form.cleaned_data["is_public"],
         password=form.cleaned_data.get("password") or None,
     )
     return redirect("game:race", room_id=room.room_id)

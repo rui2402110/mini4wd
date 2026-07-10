@@ -24,9 +24,9 @@
                 <p class="hint-text"><b style="color:#00ff88">{{ user.name }}</b> さん、ログインしました。</p>
             {% endif %}
 
-            {% if bonus_en > 0 %}
-                <div class="bonus-badge">🎁 ログインボーナス +{{ bonus_en }} en 獲得！</div>
-            {% endif %}
+            <p class="hint-text" style="text-align:center; margin-top:4px;">
+                ログインボーナスはメニュー画面で確認できます。
+            </p>
 
             <div class="stat-row">
                 <div class="stat-chip">RATE <b>{{ user.rate }}</b></div>

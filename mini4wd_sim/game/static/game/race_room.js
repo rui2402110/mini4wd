@@ -44,6 +44,16 @@
     // ══════════════════════════════════════════════════════════════
     //  CARS / PLAYERS の再構築（コース上への車体スポーン。改修要件3）
     // ══════════════════════════════════════════════════════════════
+    function configsKey(carConfigs) {
+        // 改修要件1: participant_idだけでなく色・スキル・タイプも含めることで、
+        // 同じメンバー構成のままカスタム(プリセット切替)された場合も
+        // 確実にrebuildCarsが走るようにする。
+        return JSON.stringify((carConfigs || []).map(c => [
+            c.participant_id, c.car_name, c.color_1, c.color_2, c.color_3,
+            c.main_skill, c.sub_skill_1, c.sub_skill_2, c.car_type,
+        ]));
+    }
+
     function toRaceCarConfigs(rawConfigs, myParticipantId) {
         return rawConfigs.map((c, i) => ({
             id: i + 1,
@@ -319,7 +329,7 @@
             isHost = payload.host_user_id === MY_USER_ID;
             latestRoomState = payload;
             if (!raceStarted) {
-                const memberKey = JSON.stringify(payload.car_configs.map(c => c.participant_id));
+                const memberKey = configsKey(payload.car_configs);
                 if (memberKey !== lastMemberKey) {
                     lastMemberKey = memberKey;
                     rebuildCars(payload.car_configs, payload.bets, true);
@@ -388,7 +398,7 @@
                     lastMemberKey = '';
                     if (latestRoomState) {
                         rebuildCars(latestRoomState.car_configs, latestRoomState.bets, true);
-                        lastMemberKey = JSON.stringify(latestRoomState.car_configs.map(c => c.participant_id));
+                        lastMemberKey = configsKey(latestRoomState.car_configs);
                         updateReadyStartButton(latestRoomState);
                     }
                 }, 5000);
@@ -398,7 +408,7 @@
                 if (readyStartBtn) { readyStartBtn.style.display = ''; readyStartBtn.disabled = false; }
                 if (typeof resetRace === 'function') resetRace();
                 if (latestRoomState) {
-                    lastMemberKey = JSON.stringify(latestRoomState.car_configs.map(c => c.participant_id));
+                    lastMemberKey = configsKey(latestRoomState.car_configs);
                     rebuildCars(latestRoomState.car_configs, latestRoomState.bets, true);
                     updateReadyStartButton(latestRoomState);
                 }

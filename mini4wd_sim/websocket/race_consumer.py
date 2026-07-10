@@ -255,6 +255,12 @@ class RaceConsumer(JsonWebsocketConsumer):
 
     def ws_send(self, event):
         self.send_json(event["payload"])
+        # 改修要件2: race_finished/race_errorを配信したら、このレース用の接続は
+        # 役目を終えたのでサーバー側から明示的に閉じる。閉じずに放置すると、
+        # クライアント側の再接続ガード(if (raceWS) return;)が働いたままになり、
+        # 次のレースでrace_setupを受け取れずゲームが進行不能になってしまう。
+        if event["payload"].get("type") in ("race_finished", "race_error"):
+            self.close()
 
 
 def models_f_expr(delta):
