@@ -72,6 +72,7 @@
             participantId: c.participant_id,
             displayName: c.display_name || c.car_name,
             isBot: !!c.is_bot,
+            rate: (c.rate !== undefined && c.rate !== null) ? c.rate : null,
         }));
     }
 
@@ -116,8 +117,9 @@
             PLAYERS.push({
                 id: c.id,
                 carId: c.id,
+                participantId: c.participantId,
                 name: c.isBot ? `${c.name} (BOT)` : c.name,
-                rate: 1500,
+                rate: (c.rate !== null && c.rate !== undefined) ? c.rate : '-',
                 wins: 0,
                 bet: (bets && bets[String(c.participantId)]) || 100,
                 isUser: c.participantId === MY_USER_ID,
@@ -285,9 +287,16 @@
     const leaveBtn = document.getElementById('leaveBtn');
     if (leaveBtn) {
         leaveBtn.addEventListener('click', () => {
+            if (leaveBtn.disabled) return;
             sendRoom('leave_room', {});
             window.location.href = '/rooms/';
         });
+    }
+
+    // 改修要件6-4: レース中はCUSTOM/退出ボタンを無効化する
+    function setActionButtonsDisabled(disabled) {
+        if (boardBtn) boardBtn.disabled = disabled;
+        if (leaveBtn) leaveBtn.disabled = disabled;
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -345,6 +354,20 @@
             connectRaceSocket();
         } else if (type === 'chat_broadcast') {
             if (typeof addComment === 'function') addComment(`👤 ${payload.name}: ${payload.text}`, 'player');
+        } else if (type === 'bet_updated') {
+            // 改修要件6-3: 他プレイヤーの賭け金変更を自分の画面にも即時反映する。
+            // 全体再構築(rebuildCars)は不要で、対象プレイヤーのbet値とDOM表示だけ更新すればよい。
+            if (typeof PLAYERS !== 'undefined') {
+                const p = PLAYERS.find(pl => pl.participantId === payload.user_id);
+                if (p) {
+                    p.bet = payload.amount;
+                    const el = document.getElementById(`pl-bet-${p.id}`);
+                    if (el) el.textContent = payload.amount;
+                }
+            }
+            if (latestRoomState && latestRoomState.bets) {
+                latestRoomState.bets[String(payload.user_id)] = payload.amount;
+            }
         } else if (type === 'error') {
             alert(payload.message || 'エラーが発生しました。');
         }
@@ -374,13 +397,20 @@
                 if (typeof setRaceRandomSeed === 'function') setRaceRandomSeed(payload.race_seed);
                 rebuildCars(payload.car_configs, payload.bets, false); // 改修要件6: レース中はBot操作UIを出さない
                 if (readyStartBtn) readyStartBtn.style.display = 'none';
+                setActionButtonsDisabled(true); // 改修要件6-4: レース中はCUSTOM/退出を無効化
                 if (typeof doActualStartRace === 'function') doActualStartRace();
                 pollFinish();
             } else if (type === 'race_finished') {
+                // 改修要件6-2: 生の参加者ID(pid)ではなく、CAR_CONFIGSから引いた車名を表示する
+                const nameForPid = (pid) => {
+                    if (typeof CAR_CONFIGS === 'undefined') return String(pid);
+                    const cfg = CAR_CONFIGS.find(c => c.participantId === pid || String(c.participantId) === String(pid));
+                    return cfg ? cfg.name : String(pid);
+                };
                 if (typeof addComment === 'function') {
                     let txt = '📡 サーバーが結果を確定しました:<br>';
                     (payload.rankings || []).forEach((pid, i) => {
-                        txt += `&nbsp;&nbsp;${i + 1}位: <strong>${pid}</strong>`;
+                        txt += `&nbsp;&nbsp;${i + 1}位: <strong>${nameForPid(pid)}</strong>`;
                         if (payload.rate_changes && payload.rate_changes[pid] !== undefined) {
                             const d = payload.rate_changes[pid];
                             txt += ` (レート${d >= 0 ? '+' : ''}${d})`;
@@ -406,6 +436,7 @@
                     raceStarted = false;
                     if (typeof resetRace === 'function') resetRace();
                     if (readyStartBtn) { readyStartBtn.style.display = ''; readyStartBtn.disabled = false; }
+                    setActionButtonsDisabled(false); // 改修要件6-4
                     lastMemberKey = '';
                     if (latestRoomState) {
                         rebuildCars(latestRoomState.car_configs, latestRoomState.bets, true);
@@ -417,6 +448,7 @@
                 if (typeof addComment === 'function') addComment(`⚠️ ${payload.message || 'レースが無効になりました。'}`, 'warning');
                 raceStarted = false;
                 if (readyStartBtn) { readyStartBtn.style.display = ''; readyStartBtn.disabled = false; }
+                setActionButtonsDisabled(false); // 改修要件6-4
                 if (typeof resetRace === 'function') resetRace();
                 if (latestRoomState) {
                     lastMemberKey = configsKey(latestRoomState.car_configs);

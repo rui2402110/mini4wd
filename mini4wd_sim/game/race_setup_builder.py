@@ -43,6 +43,7 @@ def build_car_configs(room, store):
             "sub_skill_1": car.sub_skill_1_id,
             "sub_skill_2": car.sub_skill_2_id,
             "car_type": car.car_type_id,
+            "rate": user.rate,
         })
 
     bot_ids = store.get_bots(str(room.room_id))

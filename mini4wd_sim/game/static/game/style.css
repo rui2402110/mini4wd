@@ -159,6 +159,12 @@
             box-shadow: 0 0 14px #ffaa0040;
         }
 
+        #boardBtn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
         #rankingBtn {
             padding: 7px 18px;
             font-family: 'Courier New', monospace;
@@ -1684,6 +1690,7 @@
     transition: all 0.18s;
 }
 #leaveBtn:hover { border-color: #ff5566; color: #ff5566; background: #ff556615; }
+#leaveBtn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 /* 準備完了/レース開始ボタン（#startBtnの基本スタイルに状態別の色を足す） */
 #startBtn.is-ready { border-color: #00ff88; color: #00ff88; background: #00ff8815; }
