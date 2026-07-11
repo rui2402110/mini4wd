@@ -1656,6 +1656,21 @@
    プリセット選択ポップアップ）関連の追加スタイル
    ══════════════════════════════════════════════════════════════════ */
 
+/* ヘッダー中央のEN・パスワード表示（改修要件2） */
+#roomInfoBar { display: flex; gap: 10px; }
+.info-chip {
+    padding: 5px 14px;
+    border: 1px solid #223;
+    background: #0e0e16;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: #889;
+}
+.info-chip b { color: #ffdd33; margin-left: 4px; }
+.info-chip.pw { border-color: #ff9933; color: #ffb366; }
+.info-chip.pw b { color: #ffcc66; letter-spacing: 2px; }
+
 /* 退出ボタン（改修要件3-3: CUSTOMボタンの隣に配置） */
 #leaveBtn {
     padding: 7px 18px;

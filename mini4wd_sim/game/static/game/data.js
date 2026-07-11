@@ -89,6 +89,29 @@
         //                   mainSkill/subSkillsと被らないよう assignRandomSkills() で抽選される。
         //                   こちらもカウントダウン終了と同時に判明する。
         //
+        // ══════════════════════════════════════════════════════════════════
+        //  決定論的な乱数生成器（改修要件5-1参照）
+        //  ・ランダムスキル抽選やコーナーのノイズ変動など、レース結果を左右する
+        //    乱数はすべてこの seededRandom() 経由で取得する。
+        //  ・race_room.js が race_setup 受信時に setRaceRandomSeed(race_seed) を
+        //    呼び出し、全クライアントが同じ乱数列で同じ計算をするようにする。
+        //  ・パーティクルの見た目など、結果に影響しない演出用の乱数は
+        //    従来どおり Math.random() のままでよい（同期不要）。
+        // ══════════════════════════════════════════════════════════════════
+        function createSeededRng(seed) {
+            let a = seed >>> 0;
+            return function () {
+                a |= 0; a = (a + 0x6D2B79F5) | 0;
+                let t = Math.imul(a ^ (a >>> 15), 1 | a);
+                t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+        let seededRandom = Math.random; // race_setup未受信時（オフライン単体動作等）のフォールバック
+        function setRaceRandomSeed(seed) {
+            seededRandom = createSeededRng(Number(seed) || 1);
+        }
+
         //   設定可能なスキルID一覧は SKILLS_DATA を参照。
         //
         //   ── オンライン統合について ──

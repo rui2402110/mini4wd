@@ -334,6 +334,7 @@
 
         function resetRace() {
             raceState = 'idle'; raceTime = 0; cdTimer = 0; winner = null; lastCDVal = 3;
+            simAccumulator = 0;
             Object.assign(commFlags, { lap3Announced: false, lap4BoostAnnounced: new Set(), battWarnDone: new Set(), battEcoDone: new Set() });
             clearHazardMeshes();
             clearRandomSkills();
@@ -490,39 +491,66 @@
         }
         let lastTS = null;
 
+        // ══════════════════════════════════════════════════════════════════
+        //  固定タイムステップ（改修要件5-1参照）
+        //  ・レースの物理更新(updateCarPhysics)は常に同じdt(1/60秒)で刻む。
+        //    端末の実フレームレートに依存させないことで、各クライアントの
+        //    レース結果（順位・タイム・スキル発動タイミング）を一致させる。
+        //  ・カメラ演出やパーティクル等の見た目だけの処理は、従来どおり
+        //    実フレームの可変dtで滑らかに動かして構わない（結果に影響しないため）。
+        //  ・極端に重い端末で毎フレームの追いつき計算が無限に増えないよう、
+        //    1フレームあたりの最大ステップ数を制限する（超過分は切り捨て、
+        //    「その端末だけ実時間より遅れて見える」だけで結果は変わらない）。
+        // ══════════════════════════════════════════════════════════════════
+        const FIXED_DT = 1 / 60;
+        const MAX_STEPS_PER_FRAME = 8;
+        let simAccumulator = 0;
+
+        function stepRaceSimulation(dt) {
+            raceTime += dt;
+            const rankings = getRankings();
+            CARS.forEach(car => {
+                updateCarPhysics(car, dt, raceTime, rankings);
+                car.updateTrailPoints();
+            });
+            if (CARS.every(car => car.finished) && raceState !== 'finished') {
+                raceState = 'finished';
+            }
+        }
+
         function animate(ts) {
             requestAnimationFrame(animate);
             if (lastTS === null) lastTS = ts;
-            const dt = Math.min((ts - lastTS) / 1000, 0.05);
+            const frameDt = Math.min((ts - lastTS) / 1000, 0.25);
             lastTS = ts;
 
-            if (raceState === 'countdown') updateCountdown(dt);
+            if (raceState === 'countdown') updateCountdown(frameDt);
 
             if (raceState === 'racing') {
-                raceTime += dt;
+                simAccumulator += frameDt;
+                let steps = 0;
+                while (simAccumulator >= FIXED_DT && steps < MAX_STEPS_PER_FRAME) {
+                    stepRaceSimulation(FIXED_DT);
+                    simAccumulator -= FIXED_DT;
+                    steps++;
+                    if (raceState !== 'racing') break; // レース中に完走判定が出たら打ち切り
+                }
+                if (steps === MAX_STEPS_PER_FRAME) simAccumulator = 0; // 無限の追いつき処理を防止
 
                 let anyCorner = false;
-
-                // 順位は毎フレーム先に計算してスキル判定に使う
                 const rankings = getRankings();
-
                 CARS.forEach(car => {
-                    updateCarPhysics(car, dt, raceTime, rankings);
-                    car.updateTrailPoints();
                     car.updateHUD(raceTime, raceState);
                     if (isCorner(car.t)) anyCorner = true;
                 });
 
                 updateCamera(rankings);
                 updateHUDRankOrder(rankings);
-                updateCornerIndicator(anyCorner, dt);
-                updateParticles(dt);
+                updateCornerIndicator(anyCorner, frameDt);
+                updateParticles(frameDt);
                 checkCommentary(raceTime);
-
-                if (CARS.every(car => car.finished) && raceState !== 'finished') {
-                    raceState = 'finished';
-                }
             } else if (raceState === 'idle') {
+                simAccumulator = 0;
                 const a = ts * 0.00007;
                 camera.position.set(Math.sin(a) * 112, 90, Math.cos(a) * 82);
                 camera.lookAt(0, 0, 0);

@@ -23,6 +23,12 @@
 {% else %}
     <div id="header">
         <div id="title">{{ room.room_name }}<small>MINI4WD SIMULATOR</small></div>
+        <div id="roomInfoBar">
+            <span class="info-chip">EN <b id="myEnValue">{{ request.user.en }}</b></span>
+            {% if room.has_password %}
+            <span class="info-chip pw">🔒 PASS <b>{{ room.password }}</b></span>
+            {% endif %}
+        </div>
         <div id="controls">
             <button id="boardBtn">🔧 CUSTOM</button>
             <button id="leaveBtn">◀ 退出</button>

@@ -27,7 +27,7 @@
                 if (CORNER_MAP[i] >= CORNER_THRESHOLD) straightPts.push(i / TOTAL_PTS);
             }
             for (let i = straightPts.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
+                const j = Math.floor(seededRandom() * (i + 1));
                 [straightPts[i], straightPts[j]] = [straightPts[j], straightPts[i]];
             }
             return straightPts.slice(0, count);
@@ -170,14 +170,14 @@
             // ── ランダムノイズ ──
             car.nTimer -= dt;
             if (car.nTimer <= 0) {
-                car.nTimer = 0.18 + Math.random() * 0.35;
+                car.nTimer = 0.18 + seededRandom() * 0.35;
                 // 安定タイヤ: 振れ幅激減（サブなら軽減幅も-50%）
                 const stablePower = carHasSkill(car, 'stable_tire') ? skillPower(car.id, 'stable_tire') : 0;
                 const NORMAL_AMP = 0.00018, STABLE_AMP = 0.00005;
                 const amp = carHasSkill(car, 'stable_tire')
                     ? NORMAL_AMP - (NORMAL_AMP - STABLE_AMP) * stablePower
                     : NORMAL_AMP;
-                car.nNoise = (Math.random() - 0.5) * amp;
+                car.nNoise = (seededRandom() - 0.5) * amp;
             }
 
             // ── コーナー減速 ──

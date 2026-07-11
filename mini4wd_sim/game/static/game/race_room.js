@@ -369,6 +369,9 @@
                 raceStarted = true;
                 isHost = !!payload.is_host;
                 window.__RACE_SEED__ = payload.race_seed;
+                // 改修要件5-1: 全クライアントで同じ乱数列を使うため、車体を再構築する前に
+                // 必ずシードを確定させる（assignRandomSkills()等がこの後に走る）。
+                if (typeof setRaceRandomSeed === 'function') setRaceRandomSeed(payload.race_seed);
                 rebuildCars(payload.car_configs, payload.bets, false); // 改修要件6: レース中はBot操作UIを出さない
                 if (readyStartBtn) readyStartBtn.style.display = 'none';
                 if (typeof doActualStartRace === 'function') doActualStartRace();
@@ -389,6 +392,14 @@
                     });
                     addComment(txt, 'finish');
                     addComment('⏱ 5秒後に次のレースの準備画面へ戻ります...', 'system');
+                }
+                // 改修要件2: 自分への払戻があれば、画面上部のEN表示にも即時反映する
+                if (payload.bet_settlement && payload.bet_settlement[MY_USER_ID] !== undefined) {
+                    const enEl = document.getElementById('myEnValue');
+                    if (enEl) {
+                        const cur = parseInt(enEl.textContent, 10) || 0;
+                        enEl.textContent = cur + payload.bet_settlement[MY_USER_ID];
+                    }
                 }
                 // 改修要件2: 結果画面を5秒間表示してから、次のレースへシームレスに移行する
                 setTimeout(() => {

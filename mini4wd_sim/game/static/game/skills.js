@@ -57,7 +57,7 @@
                 const pool = ALL_SKILL_IDS.filter(id => !owned.has(id));
                 // Fisher-Yatesで先頭2つを抽選
                 for (let i = pool.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
+                    const j = Math.floor(seededRandom() * (i + 1));
                     [pool[i], pool[j]] = [pool[j], pool[i]];
                 }
                 cfg.randomSkills = [pool[0] || null, pool[1] || null];
