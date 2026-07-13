@@ -24,6 +24,7 @@ pip install -r requirements.txt
 
 python manage.py migrate
 python manage.py seed_master_data   # スキル/カラー/車種タイプ等のマスターデータ投入
+python manage.py seed_achievements  # 実績マスターデータ投入（改修要件10）
 python manage.py runserver
 ```
 
@@ -55,4 +56,3 @@ python manage.py cleanup_old_rooms
 - race_result_report の詳細な再計算・検証は未実装（race_seed一致チェックのみ）
 - ホスト無応答時のタイムアウト処理は `race_consumer.start_report_timeout_timer` に
   骨組みを実装済みだが、本番運用に向けた再試験が必要
-1

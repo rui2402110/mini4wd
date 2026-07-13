@@ -209,7 +209,7 @@
 
     buyBtn.addEventListener('click', () => {
         if (cart.colors.size === 0 && cart.skills.size === 0 && !cart.presetSlot) {
-            alert('購入する項目を選択してください。');
+            showToast('購入する項目を選択してください。', 'error');
             return;
         }
         fetch('/garage/shop/api/purchase/', {
@@ -224,13 +224,13 @@
             .then(r => r.json())
             .then(res => {
                 if (!res.ok) {
-                    alert('購入に失敗しました: ' + res.error);
+                    showToast('購入に失敗しました: ' + res.error, 'error');
                     return;
                 }
-                alert(`購入完了！ ${res.spent.toLocaleString()} en 消費しました。`);
+                queueToastForNextLoad(`購入完了！ ${res.spent.toLocaleString()} en 消費しました。`, 'success');
                 window.location.reload();
             })
-            .catch(() => alert('通信エラーが発生しました。'));
+            .catch(() => showToast('通信エラーが発生しました。', 'error'));
     });
 
     document.getElementById('backBtn').addEventListener('click', () => {

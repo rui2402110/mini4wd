@@ -122,4 +122,8 @@ def api_purchase(request):
         if want_preset_slot and next_preset_number is not None:
             UserPresetSlot.objects.get_or_create(user=user, preset_number=next_preset_number)
 
+    if new_colors or new_skills:
+        from myroom.achievement_service import update_shop_progress
+        update_shop_progress(user)
+
     return JsonResponse({"ok": True, "spent": total, "remaining_en": user.en})

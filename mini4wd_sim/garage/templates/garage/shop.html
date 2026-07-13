@@ -8,6 +8,7 @@
     <title>ショップ - ミニ四駆シミュレーター</title>
     <link rel="stylesheet" href="{% static 'garage/style.css' %}">
     <link rel="stylesheet" href="{% static 'garage/shop.css' %}">
+    <link rel="stylesheet" href="{% static 'garage/toast.css' %}">
 </head>
 
 <body class="garage shop">
@@ -57,6 +58,7 @@
     <script>window.__SHOP_STATE__ = {{ shop_state_json|safe }};</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="{% static 'garage/car_view.js' %}"></script>
+    <script src="{% static 'garage/toast.js' %}"></script>
     <script src="{% static 'garage/shop.js' %}"></script>
 </body>
 

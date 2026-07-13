@@ -1,0 +1,67 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>戦績 - マイルーム</title>
+    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+    <link rel="stylesheet" href="{% static 'myroom/subpage.css' %}">
+</head>
+<body>
+    <div id="header">
+        <div id="title">RESULTS<span> 戦績</span></div>
+        <a class="btn alt" href="{% url 'myroom:index' %}">◀ マイルームへ</a>
+    </div>
+
+    <div id="myroom-main">
+        <div class="summary-grid">
+            <div class="summary-card">
+                <h3>生涯戦績</h3>
+                <div class="summary-row"><span>総レース数</span><b>{{ lifetime.total }}</b></div>
+                <div class="summary-row"><span>勝利数</span><b>{{ lifetime.wins }}</b></div>
+                <div class="summary-row"><span>勝率</span><b>{{ lifetime.win_rate }}%</b></div>
+                <div class="summary-row"><span>平均順位</span><b>{{ lifetime.avg_rank }}</b></div>
+                <div class="summary-row"><span>累計レート変動</span><b class="{% if lifetime.total_rate_delta >= 0 %}pos{% else %}neg{% endif %}">{{ lifetime.total_rate_delta }}</b></div>
+                <div class="summary-row"><span>累計収支(en)</span><b class="{% if lifetime.total_net_en >= 0 %}pos{% else %}neg{% endif %}">{{ lifetime.total_net_en }}</b></div>
+            </div>
+            <div class="summary-card">
+                <h3>直近50戦</h3>
+                <div class="summary-row"><span>対象レース数</span><b>{{ recent50.total }}</b></div>
+                <div class="summary-row"><span>勝利数</span><b>{{ recent50.wins }}</b></div>
+                <div class="summary-row"><span>勝率</span><b>{{ recent50.win_rate }}%</b></div>
+                <div class="summary-row"><span>平均順位</span><b>{{ recent50.avg_rank }}</b></div>
+                <div class="summary-row"><span>累計レート変動</span><b class="{% if recent50.total_rate_delta >= 0 %}pos{% else %}neg{% endif %}">{{ recent50.total_rate_delta }}</b></div>
+                <div class="summary-row"><span>累計収支(en)</span><b class="{% if recent50.total_net_en >= 0 %}pos{% else %}neg{% endif %}">{{ recent50.total_net_en }}</b></div>
+            </div>
+        </div>
+
+        <h3 class="section-title">対戦履歴</h3>
+        <div class="history-list">
+            {% for row in page_obj %}
+            <div class="history-row {% if row.is_win %}win{% endif %}">
+                <div class="h-rank">{{ row.rank }}<small>/{{ row.total_players }}</small></div>
+                <div class="h-main">
+                    <div class="h-car">{{ row.car_name|default:"-" }}</div>
+                    <div class="h-meta">{{ row.result.created_at|date:"Y/m/d H:i" }} ・ {{ row.result.room.room_name|default:"(削除された部屋)" }}</div>
+                </div>
+                <div class="h-rate {% if row.rate_delta >= 0 %}pos{% else %}neg{% endif %}">レート {{ row.rate_delta|stringformat:"+d" }}</div>
+                <div class="h-en {% if row.net_en >= 0 %}pos{% else %}neg{% endif %}">{{ row.net_en|stringformat:"+d" }} en</div>
+            </div>
+            {% empty %}
+            <p class="hint-text">まだ対戦履歴がありません。レースに参加してみましょう。</p>
+            {% endfor %}
+        </div>
+
+        <div class="pagination-row">
+            {% if page_obj.has_previous %}
+                <a class="btn alt small" href="?page={{ page_obj.previous_page_number }}">◀ 前へ</a>
+            {% endif %}
+            <span class="page-indicator">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a class="btn alt small" href="?page={{ page_obj.next_page_number }}">次へ ▶</a>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

@@ -7,12 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ミニ四駆シミュレーター - カスタマイズガレージ v1.4</title>
     <link rel="stylesheet" href="{% static 'garage/style.css' %}">
+    <link rel="stylesheet" href="{% static 'garage/toast.css' %}">
 </head>
 
 <body class="garage">
     <div id="header">
         <div id="title">CUSTOM<span>IZE</span> GARAGE<small>v1.4</small></div>
-        <button id="backBtn">◀ サーキットへ戻る</button>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <a class="btn alt" href="{% url 'myroom:index' %}">🏠 マイルーム</a>
+            <button id="backBtn">◀ サーキットへ戻る</button>
+        </div>
     </div>
 
     <div id="main">
@@ -93,6 +97,7 @@
     <script src="{% static 'garage/data.js' %}"></script>
     <script src="{% static 'garage/car_view.js' %}"></script>
     <script src="{% static 'garage/garage.js' %}"></script>
+    <script src="{% static 'garage/toast.js' %}"></script>
     <script src="{% static 'garage/garage_online.js' %}"></script>
 </body>
 

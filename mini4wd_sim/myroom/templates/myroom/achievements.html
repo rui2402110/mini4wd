@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>実績 - マイルーム</title>
+    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+    <link rel="stylesheet" href="{% static 'myroom/subpage.css' %}">
+</head>
+<body>
+    <div id="header">
+        <div id="title">ACHIEVEMENTS<span> 実績</span></div>
+        <a class="btn alt" href="{% url 'myroom:index' %}">◀ マイルームへ</a>
+    </div>
+
+    <div id="myroom-main">
+        {% if newly_granted %}
+        <div class="bonus-badge" style="margin-bottom:20px;">
+            🎉 新たに{{ newly_granted|length }}件の実績を達成！ +{{ newly_granted_total_en }} en 獲得しました。
+        </div>
+        {% endif %}
+
+        {% for a in board %}
+        <div class="achievement-card">
+            <h4>{{ a.name }} <small style="color:#556;">［{{ a.category }}］</small></h4>
+            <div class="desc">{{ a.description }}</div>
+            <div class="current">現在の値: {{ a.current_value }}</div>
+            <div class="tier-row">
+                {% for t in a.tiers %}
+                <div class="tier-chip {{ t.grade|lower }} {% if t.unlocked %}unlocked{% endif %}">
+                    <span class="g">{{ t.grade_label }}</span>
+                    {{ t.threshold }}〜<br>
+                    {% if t.unlocked %}✓ 達成済み{% else %}未達成{% endif %}<br>
+                    <small>+{{ t.en_reward }} en</small>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <p class="hint-text">実績データがまだ投入されていません（管理者に seed_achievements の実行を依頼してください）。</p>
+        {% endfor %}
+    </div>
+</body>
+</html>

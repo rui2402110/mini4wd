@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     "channels",
+    "axes",
 
     "accounts",
     "menu",
@@ -49,6 +50,7 @@ INSTALLED_APPS = [
     "rankings",
     "garage",
     "rooms",
+    "myroom",
 ]
 
 MIDDLEWARE = [
@@ -59,6 +61,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "axes.middleware.AxesMiddleware",  # 必ずMIDDLEWAREの最後に置く（django-axesの要件）
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -94,6 +97,21 @@ DATABASES = {
 # ── カスタムユーザーモデル（3章 user テーブル準拠） ──
 AUTH_USER_MODEL = "accounts.User"
 
+# ── django-axes（改修要件3: ログイン総当たり対策。学内コンテスト規模を踏まえ緩めに設定） ──
+# axesのbackendを先頭に置くことで、ロックアウト判定 → 通常認証 の順で処理される。
+# ModelBackendはUSERNAME_FIELD="name"を自動的に認識するため、カスタムbackendは不要。
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+AXES_FAILURE_LIMIT = 10          # 通常のデフォルト(3)より緩め
+AXES_COOLOFF_TIME = 0.5          # ロック解除までの時間(時間単位) = 30分
+AXES_RESET_ON_SUCCESS = True     # ログイン成功で失敗カウントをリセット
+AXES_LOCKOUT_TEMPLATE = None     # デフォルトの簡易ロック画面を使用
+AXES_VERBOSE = False
+AXES_USERNAME_FORM_FIELD = "name"  # カスタムUserモデルのUSERNAME_FIELD/ログインフォームに合わせる
+AXES_USERNAME_CALLABLE = None
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 4}},
 ]
@@ -117,17 +135,35 @@ LOGOUT_REDIRECT_URL = "accounts:index"
 REDIS_HOST = os.environ.get("REDIS_HOST")
 REDIS_PORT = int(os.environ.get("REDIS_PORT", "6379"))
 
-# REDIS_HOSTが設定されていても、channels_redisが未インストールの環境では
-# InvalidChannelLayerErrorで落ちてしまう（pip install -r requirements.txt が
-# 未実行/失敗している場合によく起きる）。実際にimportできるかを確認したうえで
-# 使用バックエンドを決定し、開発時に事故らないようにする。
+
+def _redis_reachable(host, port, timeout=0.2):
+    """
+    実際にRedisへTCP接続できるかを軽く確認する。
+    channels_redisがインストール済みでもRedisプロセス自体が起動していない
+    開発環境（Windowsでよく起きる）では接続エラーで落ちてしまうため、
+    起動時に一度だけ疎通確認し、ダメならInMemoryへフォールバックする。
+    """
+    import socket
+
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+# REDIS_HOSTが設定されていても、(a) channels_redisが未インストール、
+# (b) Redisプロセス自体が起動していない、のいずれかの場合はInvalidChannelLayerError /
+# ConnectionErrorで落ちてしまう。実際にimportでき、かつ接続できる場合のみ使用する。
 try:
     import channels_redis  # noqa: F401
     _CHANNELS_REDIS_AVAILABLE = True
 except ImportError:
     _CHANNELS_REDIS_AVAILABLE = False
 
-if REDIS_HOST and _CHANNELS_REDIS_AVAILABLE:
+_USE_REDIS = bool(REDIS_HOST) and _CHANNELS_REDIS_AVAILABLE and _redis_reachable(REDIS_HOST, REDIS_PORT)
+
+if _USE_REDIS:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -143,7 +179,13 @@ else:
             " インストールされていないため、InMemoryChannelLayerにフォールバックします。"
             " `pip install channels_redis` を実行してください。"
         )
-    # Redis未設定 or channels_redis未インストール時の開発用フォールバック
+    elif REDIS_HOST:
+        print(
+            f"[config.settings] 警告: {REDIS_HOST}:{REDIS_PORT} のRedisに接続できないため、"
+            " InMemoryChannelLayerにフォールバックします。"
+            " Redisを使う場合はRedisサーバーを起動するか、.envのREDIS_HOSTを空にしてください。"
+        )
+    # Redis未設定 or 未インストール or 未起動時の開発用フォールバック
     # （本番では必ずRedis + channels_redisを使用すること）
     CHANNEL_LAYERS = {
         "default": {

@@ -126,7 +126,7 @@
             sub_skill_2: data.subSkill2,
             car_type: TYPE_CLIENT_TO_SERVER[data.type] || 'STEADY',
         }).then(res => {
-            if (!res.ok) { alert('保存に失敗しました: ' + res.error); return; }
+            if (!res.ok) { showToast('保存に失敗しました: ' + res.error, 'error'); return; }
             STATE.cars[String(STATE.current_preset_number)] = {
                 car_name: data.name, color_1: intToHex(data.body), color_2: intToHex(data.accent), color_3: intToHex(data.mark),
                 main_skill: data.mainSkill, sub_skill_1: data.subSkill1, sub_skill_2: data.subSkill2,
@@ -155,7 +155,7 @@
                 sub_skill_2: data.subSkill2,
                 car_type: TYPE_CLIENT_TO_SERVER[data.type] || 'STEADY',
             }).then(res => {
-                if (!res.ok) { alert('プリセット登録に失敗しました: ' + res.error); return; }
+                if (!res.ok) { showToast('プリセット登録に失敗しました: ' + res.error, 'error'); return; }
                 STATE.cars[String(selectedSlot)] = {
                     car_name: data.name, color_1: intToHex(data.body), color_2: intToHex(data.accent), color_3: intToHex(data.mark),
                     main_skill: data.mainSkill, sub_skill_1: data.subSkill1, sub_skill_2: data.subSkill2,

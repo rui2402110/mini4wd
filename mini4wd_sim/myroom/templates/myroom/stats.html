@@ -1,0 +1,64 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>統計 - マイルーム</title>
+    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+    <link rel="stylesheet" href="{% static 'myroom/subpage.css' %}">
+</head>
+<body>
+    <div id="header">
+        <div id="title">STATS<span> 統計</span></div>
+        <a class="btn alt" href="{% url 'myroom:index' %}">◀ マイルームへ</a>
+    </div>
+
+    <div id="myroom-main">
+        {% if not has_data %}
+        <p class="hint-text">まだ統計を表示できるデータがありません。レースに参加してみましょう。</p>
+        {% else %}
+        <div class="stat-highlight-grid">
+            <div class="stat-highlight">
+                <div class="lbl">一番使ったスキル</div>
+                <div class="val">{{ stats.most_skill|default:"-" }}</div>
+            </div>
+            <div class="stat-highlight">
+                <div class="lbl">一番使ったタイプ</div>
+                <div class="val">{{ stats.most_type|default:"-" }}</div>
+            </div>
+            <div class="stat-highlight">
+                <div class="lbl">一番使った車</div>
+                <div class="val">{{ stats.most_car|default:"-" }}</div>
+            </div>
+        </div>
+
+        <div class="chart-grid">
+            <div class="chart-card">
+                <h4>スキル使用率</h4>
+                <canvas id="skillPieChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h4>タイプ使用率</h4>
+                <canvas id="typePieChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-grid">
+            <div class="chart-card">
+                <h4>レート推移</h4>
+                <canvas id="rateLineChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h4>ENの資産推移（レース収支の累積）</h4>
+                <canvas id="enLineChart"></canvas>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>window.__STATS_DATA__ = {{ stats_json|safe }};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script src="{% static 'myroom/stats.js' %}"></script>
+</body>
+</html>

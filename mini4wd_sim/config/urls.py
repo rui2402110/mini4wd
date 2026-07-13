@@ -10,4 +10,5 @@ urlpatterns = [
     path("rankings/", include("rankings.urls")),
     path("garage/", include("garage.urls")),
     path("rooms/", include("rooms.urls")),
+    path("myroom/", include("myroom.urls")),
 ]

@@ -229,7 +229,7 @@
         fetch('/garage/api/presets/')
             .then(r => r.json())
             .then(data => showPresetPopup(data))
-            .catch(() => alert('プリセットの取得に失敗しました。'));
+            .catch(() => showToast('プリセットの取得に失敗しました。', 'error'));
     }
 
     function showPresetPopup(data) {
@@ -264,11 +264,11 @@
                 })
                     .then(r => r.json())
                     .then(res => {
-                        if (!res.ok) { alert('変更に失敗しました: ' + res.error); return; }
+                        if (!res.ok) { showToast('変更に失敗しました: ' + res.error, 'error'); return; }
                         sendRoom('car_updated', {});
                         overlay.remove();
                     })
-                    .catch(() => alert('通信エラーが発生しました。'));
+                    .catch(() => showToast('通信エラーが発生しました。', 'error'));
             });
         });
         document.getElementById('racePresetClose').addEventListener('click', () => overlay.remove());
@@ -288,6 +288,7 @@
     if (leaveBtn) {
         leaveBtn.addEventListener('click', () => {
             if (leaveBtn.disabled) return;
+            roomIntentionalClose = true;
             sendRoom('leave_room', {});
             window.location.href = '/rooms/';
         });
@@ -318,62 +319,95 @@
 
     // ══════════════════════════════════════════════════════════════
     //  room_consumer 接続（常時接続。改修要件1・2: ロビー廃止しrace.html内で完結）
+    //  改修要件5: 予期しない切断時は指数バックオフで自動再接続する。
     // ══════════════════════════════════════════════════════════════
     const proto = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const roomWS = new WebSocket(`${proto}${window.location.host}/ws/room/${ROOM_ID}/`);
+    let roomWS = null;
     let raceWS = null;
+    let roomIntentionalClose = false;
+    let roomReconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 6;
 
     function sendRoom(type, payload) {
-        if (roomWS.readyState === WebSocket.OPEN) roomWS.send(JSON.stringify({ type, payload: payload || {} }));
+        if (roomWS && roomWS.readyState === WebSocket.OPEN) roomWS.send(JSON.stringify({ type, payload: payload || {} }));
     }
 
-    roomWS.addEventListener('open', () => { wireChat(); });
+    function connectRoomSocket() {
+        roomWS = new WebSocket(`${proto}${window.location.host}/ws/room/${ROOM_ID}/`);
 
-    roomWS.addEventListener('message', (ev) => {
-        let msg;
-        try { msg = JSON.parse(ev.data); } catch (e) { return; }
-        const { type, payload } = msg;
+        roomWS.addEventListener('open', () => {
+            roomReconnectAttempts = 0;
+            wireChat();
+            if (roomReconnectAttempts === 0 && document.getElementById('statusLine')) {
+                // no-op placeholder（現状status表示要素は無いが将来の拡張用）
+            }
+        });
 
-        if (type === 'room_state') {
-            isHost = payload.host_user_id === MY_USER_ID;
-            latestRoomState = payload;
-            if (!raceStarted) {
-                const memberKey = configsKey(payload.car_configs);
-                if (memberKey !== lastMemberKey) {
-                    lastMemberKey = memberKey;
-                    rebuildCars(payload.car_configs, payload.bets, true);
+        roomWS.addEventListener('message', (ev) => {
+            let msg;
+            try { msg = JSON.parse(ev.data); } catch (e) { return; }
+            const { type, payload } = msg;
+
+            if (type === 'room_state') {
+                isHost = payload.host_user_id === MY_USER_ID;
+                latestRoomState = payload;
+                if (!raceStarted) {
+                    const memberKey = configsKey(payload.car_configs);
+                    if (memberKey !== lastMemberKey) {
+                        lastMemberKey = memberKey;
+                        rebuildCars(payload.car_configs, payload.bets, true);
+                    }
+                    updateReadyStartButton(payload);
                 }
-                updateReadyStartButton(payload);
-            }
-        } else if (type === 'host_changed') {
-            isHost = payload.new_host_user_id === MY_USER_ID;
-            if (typeof addComment === 'function') addComment('👑 ホストが変更されました。', 'system');
-        } else if (type === 'race_starting') {
-            if (typeof addComment === 'function') addComment(`🏁 まもなくレースが開始されます...`, 'system');
-            if (readyStartBtn) readyStartBtn.disabled = true;
-            connectRaceSocket();
-        } else if (type === 'chat_broadcast') {
-            if (typeof addComment === 'function') addComment(`👤 ${payload.name}: ${payload.text}`, 'player');
-        } else if (type === 'bet_updated') {
-            // 改修要件6-3: 他プレイヤーの賭け金変更を自分の画面にも即時反映する。
-            // 全体再構築(rebuildCars)は不要で、対象プレイヤーのbet値とDOM表示だけ更新すればよい。
-            if (typeof PLAYERS !== 'undefined') {
-                const p = PLAYERS.find(pl => pl.participantId === payload.user_id);
-                if (p) {
-                    p.bet = payload.amount;
-                    const el = document.getElementById(`pl-bet-${p.id}`);
-                    if (el) el.textContent = payload.amount;
+            } else if (type === 'host_changed') {
+                isHost = payload.new_host_user_id === MY_USER_ID;
+                if (typeof addComment === 'function') addComment('👑 ホストが変更されました。', 'system');
+            } else if (type === 'race_starting') {
+                if (typeof addComment === 'function') addComment(`🏁 まもなくレースが開始されます...`, 'system');
+                if (readyStartBtn) readyStartBtn.disabled = true;
+                connectRaceSocket();
+            } else if (type === 'chat_broadcast') {
+                if (typeof addComment === 'function') addComment(`👤 ${payload.name}: ${payload.text}`, 'player');
+            } else if (type === 'bet_updated') {
+                // 改修要件6-3: 他プレイヤーの賭け金変更を自分の画面にも即時反映する。
+                // 全体再構築(rebuildCars)は不要で、対象プレイヤーのbet値とDOM表示だけ更新すればよい。
+                if (typeof PLAYERS !== 'undefined') {
+                    const p = PLAYERS.find(pl => pl.participantId === payload.user_id);
+                    if (p) {
+                        p.bet = payload.amount;
+                        const el = document.getElementById(`pl-bet-${p.id}`);
+                        if (el) el.textContent = payload.amount;
+                    }
                 }
+                if (latestRoomState && latestRoomState.bets) {
+                    latestRoomState.bets[String(payload.user_id)] = payload.amount;
+                }
+            } else if (type === 'error') {
+                showToast(payload.message || 'エラーが発生しました。', 'error');
             }
-            if (latestRoomState && latestRoomState.bets) {
-                latestRoomState.bets[String(payload.user_id)] = payload.amount;
-            }
-        } else if (type === 'error') {
-            alert(payload.message || 'エラーが発生しました。');
+        });
+
+        roomWS.addEventListener('close', () => {
+            if (roomIntentionalClose) return;
+            scheduleRoomReconnect();
+        });
+    }
+
+    function scheduleRoomReconnect() {
+        if (roomReconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            showToast('サーバーとの接続が切断されました。ページを再読み込みしてください。', 'error');
+            return;
         }
-    });
+        roomReconnectAttempts++;
+        const delay = Math.min(1000 * Math.pow(1.7, roomReconnectAttempts - 1), 8000);
+        showToast(`接続が切断されました。再接続を試みています... (${roomReconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`, 'error');
+        setTimeout(connectRoomSocket, delay);
+    }
 
+    connectRoomSocket();
     setInterval(() => sendRoom('ping', {}), 10000);
+
+    window.addEventListener('beforeunload', () => { roomIntentionalClose = true; });
 
     // ══════════════════════════════════════════════════════════════
     //  race_consumer 接続（race_starting受信時のみ。改修要件2・3）
@@ -382,6 +416,7 @@
         if (raceWS) return;
         raceWS = new WebSocket(`${proto}${window.location.host}/ws/race/${ROOM_ID}/`);
         let reported = false;
+        let raceConcludedNormally = false;
 
         raceWS.addEventListener('message', (ev) => {
             let msg;
@@ -398,9 +433,18 @@
                 rebuildCars(payload.car_configs, payload.bets, false); // 改修要件6: レース中はBot操作UIを出さない
                 if (readyStartBtn) readyStartBtn.style.display = 'none';
                 setActionButtonsDisabled(true); // 改修要件6-4: レース中はCUSTOM/退出を無効化
+                // 改修要件1: レース開始時点で賭け金が徴収されるため、表示中のENにも即座に反映する
+                if (payload.bet_charges && payload.bet_charges[String(MY_USER_ID)] !== undefined) {
+                    const enEl = document.getElementById('myEnValue');
+                    if (enEl) {
+                        const cur = parseInt(enEl.textContent, 10) || 0;
+                        enEl.textContent = Math.max(0, cur - payload.bet_charges[String(MY_USER_ID)]);
+                    }
+                }
                 if (typeof doActualStartRace === 'function') doActualStartRace();
                 pollFinish();
             } else if (type === 'race_finished') {
+                raceConcludedNormally = true;
                 // 改修要件6-2: 生の参加者ID(pid)ではなく、CAR_CONFIGSから引いた車名を表示する
                 const nameForPid = (pid) => {
                     if (typeof CAR_CONFIGS === 'undefined') return String(pid);
@@ -445,6 +489,7 @@
                     }
                 }, 5000);
             } else if (type === 'race_error') {
+                raceConcludedNormally = true;
                 if (typeof addComment === 'function') addComment(`⚠️ ${payload.message || 'レースが無効になりました。'}`, 'warning');
                 raceStarted = false;
                 if (readyStartBtn) { readyStartBtn.style.display = ''; readyStartBtn.disabled = false; }
@@ -458,7 +503,28 @@
             }
         });
 
-        raceWS.addEventListener('close', () => { raceWS = null; });
+        raceWS.addEventListener('close', () => {
+            raceWS = null;
+            // 改修要件5: race_finished/race_error を既に受け取っている場合はサーバー側の
+            // 正常なクローズなので再接続しない。レース中に予期せず切れた場合のみリトライする。
+            if (raceStarted && !raceConcludedNormally) {
+                scheduleRaceReconnect();
+            }
+        });
+
+        function scheduleRaceReconnect(attempt) {
+            attempt = attempt || 1;
+            if (attempt > MAX_RECONNECT_ATTEMPTS) {
+                showToast('レースサーバーとの接続が回復しません。ページを再読み込みしてください。', 'error');
+                return;
+            }
+            const delay = Math.min(1000 * Math.pow(1.7, attempt - 1), 8000);
+            showToast(`レース中に接続が切れました。再接続しています... (${attempt}/${MAX_RECONNECT_ATTEMPTS})`, 'error');
+            setTimeout(() => {
+                if (raceConcludedNormally) return; // 待っている間に正常終了していれば何もしない
+                connectRaceSocket(attempt + 1);
+            }, delay);
+        }
 
         function pollFinish() {
             if (reported) return;

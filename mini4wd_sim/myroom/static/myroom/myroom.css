@@ -1,0 +1,56 @@
+/* myroom/static/myroom/myroom.css ── マイルームハブ画面（改修要件7） */
+#myroom-stage {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    background: radial-gradient(ellipse at 30% 50%, #10101c 0%, #08080e 70%);
+}
+#myroomBgCanvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+}
+
+/* 改修要件7: three.js背景を予定しているため、ボタン群は左側に寄せる */
+#myroom-nav {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+    padding: 40px;
+    max-width: 320px;
+}
+
+.myroom-user-chip {
+    padding: 10px 16px;
+    border: 1px solid #223;
+    background: #0e0e16c0;
+    color: #0099ff;
+    font-size: 13px;
+    letter-spacing: 2px;
+    margin-bottom: 18px;
+}
+
+.myroom-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    background: #0e0e16d0;
+    border: 2px solid #223;
+    color: #e0e0e0;
+    text-decoration: none;
+    letter-spacing: 3px;
+    font-size: 15px;
+    transition: all 0.18s;
+}
+.myroom-nav-btn:hover {
+    border-color: #00ff88;
+    color: #00ff88;
+    box-shadow: 0 0 20px #00ff8830;
+    transform: translateX(6px);
+}
+.myroom-nav-btn .icon { font-size: 22px; }

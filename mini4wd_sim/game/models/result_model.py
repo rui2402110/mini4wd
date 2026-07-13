@@ -18,7 +18,14 @@ class Result(models.Model):
     play_member = models.JSONField(help_text='参加者ID配列。Botの場合は"Bot1"等の名前を格納')
     rank = models.JSONField(help_text="順位を記録（play_member順 or 別途順位配列）")
     car_data = models.JSONField(help_text="順位順に車のIDを記録")
-    bet = models.JSONField(help_text="順位順の賭けの受け渡し結果")
+    car_snapshot = models.JSONField(
+        default=dict, blank=True,
+        help_text='レース時点の各参加者の車体情報スナップショット。'
+                   '{participant_id: {"car_name":..,"car_type":..,"main_skill":..}}。'
+                   '統計機能・タイプ別勝利実績で、装備を変更した後でも当時の車種を参照できるようにする。',
+    )
+    bet = models.JSONField(help_text="順位順の賭けの受け渡し結果（払戻額）")
+    bet_charges = models.JSONField(default=dict, blank=True, help_text="レース開始時に徴収した賭け金（払戻額と合わせて収支計算に使う）")
     rate = models.JSONField(help_text="レートの変動結果 {user_id: delta}")
     race_seed = models.BigIntegerField(help_text="レース開始時にサーバーが払い出した乱数シード")
     reported_by = models.ForeignKey(
