@@ -289,13 +289,20 @@
             const feeAmount = Math.round(totalPot * 0.10);
             let txt = `<i class="fa-solid fa-sack-dollar" style="color:#ffdd33"></i> レース精算 合計賭け金: ${totalPot}<br>`;
 
+            // 参加人数(rankings.length)に応じたテーブルを使う。
+            // 以前は常に4人用テーブルを参照していたため、2〜3人レースでも
+            // 4人用の変動幅・払戻率が誤って適用されるバグがあった。
+            const n = rankings.length;
+            const rateTable = RATE_DELTA_TABLES[n] || RATE_DELTA_TABLES[4];
+            const payoutTable = PAYOUT_RATIO_TABLES[n] || PAYOUT_RATIO_TABLES[4];
+
             rankings.forEach((car, i) => {
                 const player = getPlayerByCarId(car.id);
                 if (!player) return;
-                const delta = RATE_DELTA_BY_RANK[i] || 0;
+                const delta = rateTable[i] || 0;
                 player.rate = Math.max(0, player.rate + delta);
                 if (i === 0) player.wins += 1;
-                const payout = Math.floor(totalPot * (PAYOUT_RATIO_BY_RANK[i] || 0));
+                const payout = Math.floor(totalPot * (payoutTable[i] || 0));
                 const sign = delta >= 0 ? '+' : '';
                 const rateCls = delta > 0 ? 'rate-up' : (delta < 0 ? 'rate-down' : '');
                 const rateEl = document.getElementById(`pl-rate-${player.id}`);

@@ -136,8 +136,20 @@
 
         const PLAYERS = [];
 
-        const RATE_DELTA_BY_RANK = [15, 5, -5, -15];
-        const PAYOUT_RATIO_BY_RANK = [0.75, 0.15, 0, 0]; // 残り10%は手数料として消滅
+        // レート変動・賭け金払戻の倍率テーブル（参加人数ごと）。
+        // websocket/race_consumer.py が使う game/rate_calculator.py・game/bet_calculator.py の
+        // ルールと同じ値にしてある（これはあくまで結果発表演出用のローカル計算であり、
+        // 実際のレート・en反映はサーバー側の確定結果に基づく）。
+        const RATE_DELTA_TABLES = {
+            2: [5, -5],
+            3: [10, 0, -10],
+            4: [15, 5, -5, -15],
+        };
+        const PAYOUT_RATIO_TABLES = {
+            2: [0.90, 0],           // 残り10%は手数料として消滅
+            3: [0.80, 0.10, 0],     // 残り10%は手数料として消滅
+            4: [0.75, 0.15, 0, 0],  // 残り10%は手数料として消滅
+        };
 
         // ── names.json 相当のデータ（ランダム命名用・garage.js で使用） ──
         const NAMES_DATA = [
@@ -200,4 +212,3 @@
             { isUser: false, name: "BULLET", player: "quick_silver", rate: 2020, type: 'LATE', bodyCol: 0x3a005c, accentCol: 0xff66cc, stripeCol: 0x111111, skill: 'reversal_motor', subSkills: ['forced_overclock', 'freeze_spray'] },
             { isUser: false, name: "COMET", player: "star_dust", rate: 1955, type: 'STEADY', bodyCol: 0x003d80, accentCol: 0x00ee77, stripeCol: 0xeeeeee, skill: 'big_motor', subSkills: ['offroad_tire', 'poison_sprinkler'] },
         ];
-
