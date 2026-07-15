@@ -44,14 +44,24 @@
             </div>
         </div>
 
-        <div class="chart-grid">
-            <div class="chart-card">
+        <!-- 改修要件8-2: レート推移・資産推移は今後データ量が増えても崩れないよう縦積みにし、
+             件数が多い場合はシークバーで過去まで遡れるようにする -->
+        <div class="chart-stack">
+            <div class="chart-card wide">
                 <h4>レート推移</h4>
                 <canvas id="rateLineChart"></canvas>
+                <div class="chart-seek-row">
+                    <input type="range" id="rateSeek" min="0" max="0" value="0" step="1">
+                    <span class="chart-seek-label" id="rateSeekLabel"></span>
+                </div>
             </div>
-            <div class="chart-card">
+            <div class="chart-card wide">
                 <h4>ENの資産推移（レース収支の累積）</h4>
                 <canvas id="enLineChart"></canvas>
+                <div class="chart-seek-row">
+                    <input type="range" id="enSeek" min="0" max="0" value="0" step="1">
+                    <span class="chart-seek-label" id="enSeekLabel"></span>
+                </div>
             </div>
         </div>
         {% endif %}

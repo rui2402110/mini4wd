@@ -30,16 +30,32 @@
         });
     }
 
-    function makeLine(canvasId, series, color, label) {
+    function makeLine(canvasId, series, color, label, seekId, seekLabelId) {
         const el = document.getElementById(canvasId);
         if (!el || !series || series.length === 0) return;
-        new Chart(el, {
+
+        const WINDOW_SIZE = 20;
+        const seekEl = document.getElementById(seekId);
+        const seekLabelEl = document.getElementById(seekLabelId);
+        const total = series.length;
+        const hasOverflow = total > WINDOW_SIZE;
+
+        function windowSlice(startIdx) {
+            const s = Math.max(0, Math.min(startIdx, total - WINDOW_SIZE));
+            const end = hasOverflow ? s + WINDOW_SIZE : total;
+            return { data: series.slice(s, end), start: s, end };
+        }
+
+        const initialStart = hasOverflow ? total - WINDOW_SIZE : 0; // 初期表示は直近分
+        const { data: initialData, start, end } = windowSlice(initialStart);
+
+        const chart = new Chart(el, {
             type: 'line',
             data: {
-                labels: series.map((_, i) => i + 1),
+                labels: initialData.map((_, i) => start + i + 1),
                 datasets: [{
                     label,
-                    data: series,
+                    data: initialData,
                     borderColor: color,
                     backgroundColor: color + '22',
                     fill: true,
@@ -55,10 +71,33 @@
                 },
             },
         });
+
+        function updateSeekLabel(s, e) {
+            if (!seekLabelEl) return;
+            seekLabelEl.textContent = hasOverflow ? `${s + 1}〜${e} / ${total}戦` : `全${total}戦`;
+        }
+        updateSeekLabel(start, end);
+
+        if (seekEl) {
+            if (!hasOverflow) {
+                seekEl.disabled = true;
+                seekEl.max = 0;
+            } else {
+                seekEl.max = total - WINDOW_SIZE;
+                seekEl.value = initialStart;
+                seekEl.addEventListener('input', () => {
+                    const { data, start: s, end: e } = windowSlice(Number(seekEl.value));
+                    chart.data.labels = data.map((_, i) => s + i + 1);
+                    chart.data.datasets[0].data = data;
+                    chart.update();
+                    updateSeekLabel(s, e);
+                });
+            }
+        }
     }
 
     makePie('skillPieChart', DATA.skill_pie);
     makePie('typePieChart', DATA.type_pie);
-    makeLine('rateLineChart', DATA.rate_series, '#0099ff', 'レート');
-    makeLine('enLineChart', DATA.en_series, '#ffdd33', 'EN収支累積');
+    makeLine('rateLineChart', DATA.rate_series, '#0099ff', 'レート', 'rateSeek', 'rateSeekLabel');
+    makeLine('enLineChart', DATA.en_series, '#ffdd33', 'EN収支累積', 'enSeek', 'enSeekLabel');
 })();

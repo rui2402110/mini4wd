@@ -73,7 +73,7 @@
                     <div class="stat-row"><span class="stat-label">BEST</span><span class="stat-value" id="best-${this.id}">--.-</span></div>
                     <div class="lap-bar"><div class="lap-fill" id="prog-${this.id}" style="background:${this.accentHex}"></div></div>
                     <div class="battery-bar-wrap">
-                        <span class="battery-icon">🔋</span>
+                        <span class="battery-icon"><i class="fa-solid fa-car-battery"></i></span>
                         <div class="battery-bar"><div class="battery-fill" id="batt-${this.id}" style="width:100%;background:#00ff88"></div></div>
                         <span class="battery-pct" id="batt-pct-${this.id}">100%</span>
                     </div>
@@ -112,7 +112,7 @@
                 let line1 = '';
                 if (cfg.mainSkill) {
                     const sk = getSkill(cfg.mainSkill);
-                    if (sk) line1 += `<span class="skill-badge role-main" id="badge-${this.id}-${sk.id}" title="★メイン: ${sk.effect}">★${sk.name}</span>`;
+                    if (sk) line1 += `<span class="skill-badge role-main" id="badge-${this.id}-${sk.id}" title="メイン: ${sk.effect}"><i class="fa-solid fa-star" style="color:#ffdd33"></i>${sk.name}</span>`;
                 }
                 (cfg.subSkills || []).forEach(id => {
                     if (revealed) {
@@ -129,9 +129,9 @@
                 (cfg.randomSkills || []).forEach(id => {
                     if (revealed && id) {
                         const sk = getSkill(id);
-                        if (sk) line2 += `<span class="skill-badge role-random" id="badge-${this.id}-${sk.id}" title="🎲ランダム: ${sk.effect}">🎲${sk.name}</span>`;
+                        if (sk) line2 += `<span class="skill-badge role-random" id="badge-${this.id}-${sk.id}" title="ランダム: ${sk.effect}"><i class="fa-solid fa-dice"></i>${sk.name}</span>`;
                     } else {
-                        line2 += `<span class="skill-badge random-hidden">🎲???</span>`;
+                        line2 += `<span class="skill-badge random-hidden"><i class="fa-solid fa-dice"></i>???</span>`;
                     }
                 });
                 this.domSkillLine2.innerHTML = line2;
@@ -287,7 +287,7 @@
         function settleBetsAndRates(rankings) {
             const totalPot = PLAYERS.reduce((s, p) => s + p.bet, 0);
             const feeAmount = Math.round(totalPot * 0.10);
-            let txt = `💰 レース精算 合計賭け金: ${totalPot}<br>`;
+            let txt = `<i class="fa-solid fa-sack-dollar" style="color:#ffdd33"></i> レース精算 合計賭け金: ${totalPot}<br>`;
 
             rankings.forEach((car, i) => {
                 const player = getPlayerByCarId(car.id);
@@ -303,7 +303,7 @@
                     rateEl.classList.remove('rate-up', 'rate-down');
                     if (rateCls) rateEl.classList.add(rateCls);
                 }
-                txt += `&nbsp;&nbsp;${i + 1}位 <strong style="color:${car.accentHex}">${player.name}</strong>：レート${sign}${delta}（→${player.rate}） / 払戻 ${payout}${payout > 0 ? '💴' : ''}<br>`;
+                txt += `&nbsp;&nbsp;${i + 1}位 <strong style="color:${car.accentHex}">${player.name}</strong>：レート${sign}${delta}（→${player.rate}） / 払戻 ${payout}${payout > 0 ? '<i class="fa-solid fa-yen-sign" style="color:#ffdd33"></i>' : ''}<br>`;
             });
 
             renderPlayerStats();
@@ -366,7 +366,7 @@
             // 賭け金確定＆入力ロック
             setBetInputsLocked(true);
             const totalPot = PLAYERS.reduce((s, p) => s + p.bet, 0);
-            let betTxt = `💴 賭け金確定（合計 ${totalPot}）：`;
+            let betTxt = `<i class="fa-solid fa-yen-sign" style="color:#ffdd33"></i> 賭け金確定（合計 ${totalPot}）：`;
             PLAYERS.forEach(p => { betTxt += `${p.name}=${p.bet} `; });
             addComment(betTxt, 'system');
 
@@ -388,18 +388,18 @@
                 if (carHasSkill(car, 'mud_trap')) {
                     const prm = getSkill('mud_trap').params;
                     spawnSlowZone('mud', car, 'mud_trap', CARS.filter(c => c.id !== car.id), prm.mudCount);
-                    addComment(`🟤 ${carName} がイカサマ重馬場を仕込んだ！他車の直線に泥ゾーンが出現！`, 'warning');
+                    addComment(`<i class="fa-solid fa-mound" style="color:#8a5a2b"></i> ${carName} がイカサマ重馬場を仕込んだ！他車の直線に泥ゾーンが出現！`, 'warning');
                 }
 
                 if (carHasSkill(car, 'poison_chihuahua')) {
                     spawnSlowZone('poison', car, 'poison_chihuahua', CARS.filter(c => c.id !== car.id), 1);
-                    addComment(`🐕 ${carName} の毒チワワレーサーが発動！他車のコースに毒ゾーンが出現！`, 'warning');
+                    addComment(`<i class="fa-solid fa-dog"></i> ${carName} の毒チワワレーサーが発動！他車のコースに毒ゾーンが出現！`, 'warning');
                 }
 
                 if (carHasSkill(car, 'freeze_spray')) {
                     const prm = getSkill('freeze_spray').params;
                     spawnFreezeZone(car, 'freeze_spray', CARS, prm.zoneCount);
-                    addComment(`❄️ ${carName} の路面凍結スプレーが発動！全車のコースに凍結ゾーンが出現！`, 'warning');
+                    addComment(`<i class="fa-solid fa-snowflake"></i> ${carName} の路面凍結スプレーが発動！全車のコースに凍結ゾーンが出現！`, 'warning');
                 }
 
                 if (carHasSkill(car, 'forced_overclock')) {
@@ -412,7 +412,7 @@
                         spawnParticles(target, 'smoke');
                     });
                     car.flashBadge('forced_overclock');
-                    addComment(`⚙️ ${carName} の強制オーバークロック発動！他車全員が速度上昇と引き換えにバッテリーを消耗！`, 'warning');
+                    addComment(`<i class="fa-solid fa-gear"></i> ${carName} の強制オーバークロック発動！他車全員が速度上昇と引き換えにバッテリーを消耗！`, 'warning');
                 }
             });
         }
@@ -426,7 +426,7 @@
             elFinish.classList.add('visible');
             elStart.disabled = false; elStart.textContent = 'START';
             elStatus.textContent = 'FINISHED';
-            addComment(`🏆 レース終了！優勝: <strong style="color:${winner.accentHex}">${winner.name}</strong> (${raceTime.toFixed(2)}s)`, 'finish');
+            addComment(`<i class="fa-solid fa-trophy" style="color:#ffd700"></i> レース終了！優勝: <strong style="color:${winner.accentHex}">${winner.name}</strong> (${raceTime.toFixed(2)}s)`, 'finish');
 
             const rankings = getRankings();
             let txt = '最終順位:<br>';
@@ -448,17 +448,17 @@
 
                 // ── サブスキル・ランダムスキル公開（レース開始と同時に判明する仕様）──
                 CARS.forEach(car => car.updateSkillBadges(true));
-                let revealMsg = '🔓 サブ・ランダムスキル判明！<br>';
+                let revealMsg = '<i class="fa-solid fa-lock-open"></i> サブ・ランダムスキル判明！<br>';
                 CARS.forEach(car => {
                     const cfg = CAR_CONFIGS.find(c => c.id === car.id);
                     if (!cfg) return;
                     const subNames = (cfg.subSkills || []).map(id => { const s = getSkill(id); return s ? s.name : id; }).join('・');
                     const randNames = (cfg.randomSkills || []).map(id => { const s = getSkill(id); return s ? s.name : id; }).join('・');
-                    revealMsg += `&nbsp;&nbsp;<strong style="color:${car.accentHex}">${car.name}</strong>：▽${subNames} / 🎲${randNames}<br>`;
+                    revealMsg += `&nbsp;&nbsp;<strong style="color:${car.accentHex}">${car.name}</strong>：▽${subNames} / <i class="fa-solid fa-dice"></i>${randNames}<br>`;
                 });
                 addComment(revealMsg, 'boost');
 
-                addComment('🚦 レーススタート！全車一斉に走り出した！', 'system');
+                addComment('<i class="fa-solid fa-traffic-light"></i> レーススタート！全車一斉に走り出した！', 'system');
                 return;
             }
             if (cdTimer >= 2.7) {

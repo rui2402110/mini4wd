@@ -119,7 +119,7 @@
                         car.flashBadge(skillId);
                         spawnParticles(car, 'flame');
                         announceBoost(car, bonus, elapsed);
-                        addComment(`🔥 ${carName} が追い込みブースト発動！5ラップ目に全力加速！`, 'boost');
+                        addComment(`<i class="fa-solid fa-fire" style="color:#ff6633"></i> ${carName} が追い込みブースト発動！5ラップ目に全力加速！`, 'boost');
                         doFlash('#ff440022', 350);
                     }
                     break;
@@ -131,7 +131,7 @@
                         car.battery = Math.min(100, car.battery + recover);
                         car.flashBadge(skillId);
                         spawnParticles(car, 'green_plus');
-                        addComment(`💚 ${carName} の違法バッテリーが起動！バッテリーが${recover.toFixed(0)}%回復した！`, 'boost');
+                        addComment(`<i class="fa-solid fa-heart" style="color:#33dd66"></i> ${carName} の違法バッテリーが起動！バッテリーが${recover.toFixed(0)}%回復した！`, 'boost');
                     }
                     break;
 
@@ -146,7 +146,7 @@
                         spawnParticles(car, 'green_plus');
                         spawnParticles(car, 'flame');
                         announceBoost(car, speedBoost, elapsed);
-                        addComment(`⚡ ${carName} の逆転モーター発動！3位以下からの大逆転劇が始まる！`, 'boost');
+                        addComment(`<i class="fa-solid fa-bolt"></i> ${carName} の逆転モーター発動！3位以下からの大逆転劇が始まる！`, 'boost');
                         doFlash('#ffee0018', 300);
                     }
                     break;
@@ -161,7 +161,7 @@
                             target.battery = Math.max(0, target.battery - p.targetBattDebuff * power);
                             spawnTargetHaze(target);
                         });
-                        addComment(`😈 ${carName} の勝ち越しモーター発動！他車に速度低下とバッテリー消耗を付与！`, 'warning');
+                        addComment(`<i class="fa-solid fa-skull" style="color:#cc44ff"></i> ${carName} の勝ち越しモーター発動！他車に速度低下とバッテリー消耗を付与！`, 'warning');
                     }
                     break;
 
@@ -176,7 +176,7 @@
                         car.flashBadge(skillId);
                         spawnParticles(car, 'blue_water');
                         announceBoost(car, speedBoost, elapsed);
-                        addComment(`💧 ${carName} のビッグモーター発動！大出力でバッテリーを急速消費しながら加速！`, 'boost');
+                        addComment(`<i class="fa-solid fa-droplet" style="color:#44aaff"></i> ${carName} のビッグモーター発動！大出力でバッテリーを急速消費しながら加速！`, 'boost');
                         doFlash('#0088ff18', 350);
                     }
                     break;
@@ -201,7 +201,7 @@
                         });
                         car.flashBadge(skillId);
                         spawnParticles(car, 'blue_circle');
-                        addComment(`📡 ${carName} の無線ジャミング発動！前方の車体を電波妨害！`, 'warning');
+                        addComment(`<i class="fa-solid fa-satellite-dish"></i> ${carName} の無線ジャミング発動！前方の車体を電波妨害！`, 'warning');
                     }
                     break;
 
@@ -212,7 +212,7 @@
                         spawnSlowZone('poison', car, 'poison_sprinkler', CARS.filter(c => c.id !== car.id), p.mudCount);
                         car.flashBadge(skillId);
                         spawnParticles(car, 'purple');
-                        addComment(`☠️ ${carName} の劇物散布スプリンクラー発動！コース上に毒ゾーンを散布！`, 'warning');
+                        addComment(`<i class="fa-solid fa-skull-crossbones"></i> ${carName} の劇物散布スプリンクラー発動！コース上に毒ゾーンを散布！`, 'warning');
                     }
                     break;
 
@@ -225,7 +225,7 @@
                         });
                         car.flashBadge(skillId);
                         spawnParticles(car, 'explosion');
-                        addComment(`💥 ${carName} の自爆EMP発動！全車の速度が一瞬ガクッと落ちた！`, 'warning');
+                        addComment(`<i class="fa-solid fa-bomb" style="color:#ff5533"></i> ${carName} の自爆EMP発動！全車の速度が一瞬ガクッと落ちた！`, 'warning');
                         doFlash('#ff220022', 400);
                     }
                     break;
@@ -238,7 +238,7 @@
                         car.battery = Math.min(100, car.battery + p.battRecover * power);
                         car.flashBadge(skillId);
                         spawnParticles(car, 'green_plus');
-                        addComment(`🟢 ${carName} のブレーキ&アクセルペダル(ブレーキ)発動！減速と引き換えにバッテリー満タン！`, 'boost');
+                        addComment(`<i class="fa-solid fa-circle-check" style="color:#33dd66"></i> ${carName} のブレーキ&アクセルペダル(ブレーキ)発動！減速と引き換えにバッテリー満タン！`, 'boost');
                     }
                     // 効果②: 5ラップ目到達で速度アップ（1回）
                     if (car.lap >= 4 && !ss.pedalBoostUsed) {
@@ -248,7 +248,7 @@
                         car.flashBadge(skillId);
                         spawnParticles(car, 'blue_water');
                         announceBoost(car, bonus, elapsed);
-                        addComment(`🔵 ${carName} のブレーキ&アクセルペダル(アクセル)発動！ラストスパート！`, 'boost');
+                        addComment(`<i class="fa-solid fa-circle-info" style="color:#3399ff"></i> ${carName} のブレーキ&アクセルペダル(アクセル)発動！ラストスパート！`, 'boost');
                     }
                     break;
 
@@ -261,7 +261,7 @@
                         car.flashBadge(skillId);
                         spawnParticles(car, 'green_plus');
                         spawnParticles(car, 'purple');
-                        addComment(`🔋 ${carName} の液漏れバッテリー発動！バッテリーが回復し、漏れた液が毒ゾーンに！`, 'boost');
+                        addComment(`<i class="fa-solid fa-car-battery"></i> ${carName} の液漏れバッテリー発動！バッテリーが回復し、漏れた液が毒ゾーンに！`, 'boost');
                     }
                     break;
 
@@ -274,7 +274,7 @@
                             addTimedEffect(car, 1 + ev.magnitude * power, 5, elapsed);
                             car.flashBadge(skillId);
                             spawnParticles(car, 'yellow');
-                            addComment(`🟡 ${carName} の並走モーター発動！他車の加速に便乗！`, 'boost');
+                            addComment(`<i class="fa-solid fa-circle-exclamation" style="color:#ffdd33"></i> ${carName} の並走モーター発動！他車の加速に便乗！`, 'boost');
                         }
                     }
                     break;

@@ -1,3 +1,4 @@
+{% load icons %}
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -5,6 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ミニ四駆シミュレーター - MAIN MENU</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -266,7 +268,7 @@
 <body data-authenticated="true" data-username="{{ request.user.name|default:'PILOT' }}">
     {% csrf_token %}
     {% if bonus_en > 0 %}
-    <div id="loginBonusToast">🎁 ログインボーナス +{{ bonus_en }} en 獲得！</div>
+    <div id="loginBonusToast">{% icon "gift" %} ログインボーナス +{{ bonus_en }} en 獲得！</div>
     <style>
         #loginBonusToast {
             position: fixed; top: 18px; left: 50%; transform: translateX(-50%);

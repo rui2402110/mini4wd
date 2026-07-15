@@ -43,6 +43,7 @@ INSTALLED_APPS = [
 
     "channels",
     "axes",
+    "django_icons",
 
     "accounts",
     "menu",
@@ -202,3 +203,25 @@ ROOM_STALE_HOURS = int(os.environ.get("ROOM_STALE_HOURS", "6"))
 COLOR_PRICE_EN = 75_000
 SKILL_PRICE_EN = 15_000
 PRESET_SLOT_PRICE_EN = 150_000
+
+# ── django-icons（改修要件8-3: 画面表示の絵文字をアイコンフォントに置き換え） ──
+# レンダラーはFont Awesome 6 Solid（CDNはテンプレート側で読み込む）。
+DJANGO_ICONS = {
+    "DEFAULTS": {
+        "renderer": "icon",
+    },
+    "ICONS": {
+        "lock": {"name": "fa-solid fa-lock"},
+        "wrench": {"name": "fa-solid fa-wrench"},
+        "house": {"name": "fa-solid fa-house"},
+        "save": {"name": "fa-solid fa-floppy-disk"},
+        "load": {"name": "fa-solid fa-folder-open"},
+        "star": {"name": "fa-solid fa-star"},
+        "gift": {"name": "fa-solid fa-gift"},
+        "check": {"name": "fa-solid fa-check"},
+        "celebrate": {"name": "fa-solid fa-champagne-glasses"},
+        "trophy": {"name": "fa-solid fa-trophy"},
+        "chart": {"name": "fa-solid fa-chart-column"},
+        "flag": {"name": "fa-solid fa-flag-checkered"},
+    },
+}

@@ -66,7 +66,7 @@
                 const allPast3 = CARS.every(c => c.lap >= 3 || c.finished);
                 if (allPast3) {
                     commFlags.lap3Announced = true;
-                    let txt = '🏁 3ラップ終了！現在の順位:<br>';
+                    let txt = '<i class="fa-solid fa-flag-checkered"></i> 3ラップ終了！現在の順位:<br>';
                     rankings.forEach((c, i) => {
                         txt += `&nbsp;&nbsp;${i + 1}位: <strong style="color:${c.accentHex}">${c.name}</strong><br>`;
                     });
@@ -77,7 +77,7 @@
             CARS.forEach(c => {
                 if (c.typKey === 'LATE' && c.lap >= 4 && !commFlags.lap4BoostAnnounced.has(c.id)) {
                     commFlags.lap4BoostAnnounced.add(c.id);
-                    addComment(`⚡ <strong style="color:${c.accentHex}">${c.name}</strong> がバッテリー全開放！後半追い上げ開始！`, 'boost');
+                    addComment(`<i class="fa-solid fa-bolt"></i> <strong style="color:${c.accentHex}">${c.name}</strong> がバッテリー全開放！後半追い上げ開始！`, 'boost');
                     doFlash('#ff00ff22', 400);
                 }
             });
@@ -85,13 +85,13 @@
             CARS.forEach(c => {
                 if (c.battery <= 20 && !commFlags.battWarnDone.has(c.id) && !c.finished && c.battery > 10) {
                     commFlags.battWarnDone.add(c.id);
-                    addComment(`⚠️ <strong style="color:${c.accentHex}">${c.name}</strong> のバッテリー残量が20%を切った！`, 'warning');
+                    addComment(`<i class="fa-solid fa-triangle-exclamation"></i> <strong style="color:${c.accentHex}">${c.name}</strong> のバッテリー残量が20%を切った！`, 'warning');
                 }
 
                 // 節約モード移行アナウンス（前半型のみ）
                 if (c.battery <= ECO_BATTERY_THRESHOLD && !commFlags.battEcoDone.has(c.id) && !c.finished && c.battery > 0 && c.typKey === 'EARLY') {
                     commFlags.battEcoDone.add(c.id);
-                    addComment(`🔋 <strong style="color:${c.accentHex}">${c.name}</strong> が残量10%！強制節約モードへ移行し逃げ切りを図る！`, 'warning');
+                    addComment(`<i class="fa-solid fa-car-battery"></i> <strong style="color:${c.accentHex}">${c.name}</strong> が残量10%！強制節約モードへ移行し逃げ切りを図る！`, 'warning');
                 }
             });
         }

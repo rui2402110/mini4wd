@@ -1,10 +1,12 @@
 {% load static %}
+{% load icons %}
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>マイルーム - ミニ四駆シミュレーター</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
     <link rel="stylesheet" href="{% static 'myroom/myroom.css' %}">
 </head>
@@ -15,26 +17,28 @@
     </div>
 
     <div id="myroom-stage">
-        <!-- three.jsの背景描画先（次回改修で実装予定）。現時点ではダークグラデーションのみ -->
         <canvas id="myroomBgCanvas"></canvas>
 
         <div id="myroom-nav">
             <div class="myroom-user-chip">{{ request.user.name }}</div>
             <a class="myroom-nav-btn" href="{% url 'myroom:results' %}">
-                <span class="icon">🏁</span>
+                <span class="icon">{% icon "flag" %}</span>
                 <span class="label">戦績</span>
             </a>
             <a class="myroom-nav-btn" href="{% url 'myroom:stats' %}">
-                <span class="icon">📊</span>
+                <span class="icon">{% icon "chart" %}</span>
                 <span class="label">統計</span>
             </a>
             <a class="myroom-nav-btn" href="{% url 'myroom:achievements' %}">
-                <span class="icon">🏆</span>
+                <span class="icon">{% icon "trophy" %}</span>
                 <span class="label">実績</span>
             </a>
         </div>
     </div>
 
-    <script src="{% static 'myroom/myroom.js' %}"></script>
+    <script>window.__PREVIEW_CAR__ = {{ preview_car_json|safe }};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="{% static 'myroom/car_view.js' %}"></script>
+    <script src="{% static 'myroom/myroom_scene.js' %}"></script>
 </body>
 </html>

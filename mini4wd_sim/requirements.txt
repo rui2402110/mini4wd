@@ -5,3 +5,4 @@ daphne==4.1.2
 redis==5.0.4
 python-dotenv==1.0.1
 django-axes==6.5.1
+django-icons==26.1

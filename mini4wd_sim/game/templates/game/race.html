@@ -1,4 +1,5 @@
 {% load static %}
+{% load icons %}
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -6,6 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ room.room_name }} - ミニ四駆シミュレーター</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{% static 'game/style.css' %}">
     <link rel="stylesheet" href="{% static 'game/toast.css' %}">
 </head>
@@ -14,7 +16,7 @@
 {% if need_password %}
     <div id="racePasswordGate">
         <div id="racePasswordCard">
-            <h2>🔒 パスワードが必要です</h2>
+            <h2>{% icon "lock" %} パスワードが必要です</h2>
             <form method="get">
                 <input type="password" name="password" placeholder="部屋のパスワード" autofocus>
                 <button type="submit" class="btn" style="width:100%;">入室する</button>
@@ -27,11 +29,11 @@
         <div id="roomInfoBar">
             <span class="info-chip">EN <b id="myEnValue">{{ request.user.en }}</b></span>
             {% if room.has_password %}
-            <span class="info-chip pw">🔒 PASS <b>{{ room.password }}</b></span>
+            <span class="info-chip pw">{% icon "lock" %} PASS <b>{{ room.password }}</b></span>
             {% endif %}
         </div>
         <div id="controls">
-            <button id="boardBtn">🔧 CUSTOM</button>
+            <button id="boardBtn">{% icon "wrench" %} CUSTOM</button>
             <button id="leaveBtn">◀ 退出</button>
             <button id="startBtn">準備完了</button>
         </div>

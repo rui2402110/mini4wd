@@ -1,4 +1,5 @@
 {% load static %}
+{% load icons %}
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -6,6 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ミニ四駆シミュレーター - カスタマイズガレージ v1.4</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{% static 'garage/style.css' %}">
     <link rel="stylesheet" href="{% static 'garage/toast.css' %}">
 </head>
@@ -14,7 +16,7 @@
     <div id="header">
         <div id="title">CUSTOM<span>IZE</span> GARAGE<small>v1.4</small></div>
         <div style="display:flex; gap:10px; align-items:center;">
-            <a class="btn alt" href="{% url 'myroom:index' %}">🏠 マイルーム</a>
+            <a class="btn alt" href="{% url 'myroom:index' %}">{% icon "house" %} マイルーム</a>
             <button id="backBtn">◀ サーキットへ戻る</button>
         </div>
     </div>
@@ -46,7 +48,7 @@
             <div id="strategyDesc" class="desc-box"></div>
 
             <div class="panel-title">EQUIP SKILL</div>
-            <div class="skill-role-label role-main">★ MAIN（常時全力）</div>
+            <div class="skill-role-label role-main">{% icon "star" %} MAIN（常時全力）</div>
             <select id="skillSelectMain" class="skill-select"></select>
             <div id="skillDescMain" class="desc-box"></div>
 
@@ -72,8 +74,8 @@
             </div>
 
             <div class="garage-action-row">
-                <button class="btn" id="btnSaveGarage">💾 SAVE</button>
-                <button class="btn alt" id="btnCallPreset">📂 CALL PRESET</button>
+                <button class="btn" id="btnSaveGarage">{% icon "save" %} SAVE</button>
+                <button class="btn alt" id="btnCallPreset">{% icon "load" %} CALL PRESET</button>
             </div>
         </div>
     </div>

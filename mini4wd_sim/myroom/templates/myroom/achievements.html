@@ -1,10 +1,12 @@
 {% load static %}
+{% load icons %}
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>実績 - マイルーム</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
     <link rel="stylesheet" href="{% static 'myroom/subpage.css' %}">
 </head>
@@ -17,7 +19,7 @@
     <div id="myroom-main">
         {% if newly_granted %}
         <div class="bonus-badge" style="margin-bottom:20px;">
-            🎉 新たに{{ newly_granted|length }}件の実績を達成！ +{{ newly_granted_total_en }} en 獲得しました。
+            {% icon "celebrate" %} 新たに{{ newly_granted|length }}件の実績を達成！ +{{ newly_granted_total_en }} en 獲得しました。
         </div>
         {% endif %}
 
@@ -31,7 +33,7 @@
                 <div class="tier-chip {{ t.grade|lower }} {% if t.unlocked %}unlocked{% endif %}">
                     <span class="g">{{ t.grade_label }}</span>
                     {{ t.threshold }}〜<br>
-                    {% if t.unlocked %}✓ 達成済み{% else %}未達成{% endif %}<br>
+                    {% if t.unlocked %}{% icon "check" %} 達成済み{% else %}未達成{% endif %}<br>
                     <small>+{{ t.en_reward }} en</small>
                 </div>
                 {% endfor %}

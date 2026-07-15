@@ -228,7 +228,7 @@
                     ss.dynamoUsed = true;
                     ss.dynamoActiveUntil = elapsed + prm.duration;
                     car.flashBadge('dynamo_gear');
-                    addComment(`⚙️ <strong style="color:${car.accentHex}">${car.name}</strong> の魔改造ダイナモギア発動！バッテリーが持続回復し始めた！`, 'boost');
+                    addComment(`<i class="fa-solid fa-gear"></i> <strong style="color:${car.accentHex}">${car.name}</strong> の魔改造ダイナモギア発動！バッテリーが持続回復し始めた！`, 'boost');
                 }
                 if (ss.dynamoActiveUntil && elapsed < ss.dynamoActiveUntil) {
                     const power = skillPower(car.id, 'dynamo_gear');

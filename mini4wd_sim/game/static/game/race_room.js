@@ -165,7 +165,7 @@
             const slot = document.createElement('div');
             slot.className = 'car-panel empty-slot';
             if (isHost) {
-                slot.innerHTML = `<button class="add-bot-btn">🤖 + Bot追加</button>`;
+                slot.innerHTML = `<button class="add-bot-btn"><i class="fa-solid fa-robot"></i> + Bot追加</button>`;
                 slot.querySelector('.add-bot-btn').addEventListener('click', () => sendRoom('add_bot', {}));
             } else {
                 slot.innerHTML = `<span class="empty-slot-label">空き枠</span>`;
@@ -201,11 +201,11 @@
         if (!readyStartBtn || raceStarted) return;
         readyStartBtn.disabled = false;
         if (isHost) {
-            readyStartBtn.textContent = 'レース開始 ▶';
+            readyStartBtn.innerHTML = 'レース開始 <i class="fa-solid fa-play"></i>';
             readyStartBtn.classList.add('host-start');
         } else {
             iAmReady = !!(state.ready_map && state.ready_map[String(MY_USER_ID)]);
-            readyStartBtn.textContent = iAmReady ? '準備完了 ✓' : '準備完了にする';
+            readyStartBtn.innerHTML = iAmReady ? '準備完了 <i class="fa-solid fa-check" style="color:#00ff88"></i>' : '準備完了にする';
             readyStartBtn.classList.toggle('is-ready', iAmReady);
         }
     }
@@ -277,7 +277,6 @@
 
     const boardBtn = document.getElementById('boardBtn');
     if (boardBtn) {
-        boardBtn.textContent = '🔧 CUSTOM';
         boardBtn.addEventListener('click', openPresetPopup);
     }
 
@@ -361,13 +360,13 @@
                 }
             } else if (type === 'host_changed') {
                 isHost = payload.new_host_user_id === MY_USER_ID;
-                if (typeof addComment === 'function') addComment('👑 ホストが変更されました。', 'system');
+                if (typeof addComment === 'function') addComment('<i class="fa-solid fa-crown" style="color:#ffd700"></i> ホストが変更されました。', 'system');
             } else if (type === 'race_starting') {
-                if (typeof addComment === 'function') addComment(`🏁 まもなくレースが開始されます...`, 'system');
+                if (typeof addComment === 'function') addComment(`<i class="fa-solid fa-flag-checkered"></i> まもなくレースが開始されます...`, 'system');
                 if (readyStartBtn) readyStartBtn.disabled = true;
                 connectRaceSocket();
             } else if (type === 'chat_broadcast') {
-                if (typeof addComment === 'function') addComment(`👤 ${payload.name}: ${payload.text}`, 'player');
+                if (typeof addComment === 'function') addComment(`<i class="fa-solid fa-user"></i> ${payload.name}: ${payload.text}`, 'player');
             } else if (type === 'bet_updated') {
                 // 改修要件6-3: 他プレイヤーの賭け金変更を自分の画面にも即時反映する。
                 // 全体再構築(rebuildCars)は不要で、対象プレイヤーのbet値とDOM表示だけ更新すればよい。
@@ -452,7 +451,7 @@
                     return cfg ? cfg.name : String(pid);
                 };
                 if (typeof addComment === 'function') {
-                    let txt = '📡 サーバーが結果を確定しました:<br>';
+                    let txt = '<i class="fa-solid fa-satellite-dish"></i> サーバーが結果を確定しました:<br>';
                     (payload.rankings || []).forEach((pid, i) => {
                         txt += `&nbsp;&nbsp;${i + 1}位: <strong>${nameForPid(pid)}</strong>`;
                         if (payload.rate_changes && payload.rate_changes[pid] !== undefined) {
@@ -490,7 +489,7 @@
                 }, 5000);
             } else if (type === 'race_error') {
                 raceConcludedNormally = true;
-                if (typeof addComment === 'function') addComment(`⚠️ ${payload.message || 'レースが無効になりました。'}`, 'warning');
+                if (typeof addComment === 'function') addComment(`<i class="fa-solid fa-triangle-exclamation"></i> ${payload.message || 'レースが無効になりました。'}`, 'warning');
                 raceStarted = false;
                 if (readyStartBtn) { readyStartBtn.style.display = ''; readyStartBtn.disabled = false; }
                 setActionButtonsDisabled(false); // 改修要件6-4

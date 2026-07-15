@@ -52,7 +52,7 @@
                         </span>
                     </div>
                     <div class="row-skills">
-                        <span class="skill-tag role-main">★ ${sk ? sk.name : '-'}</span>
+                        <span class="skill-tag role-main"><i class="fa-solid fa-star" style="color:#ffdd33"></i> ${sk ? sk.name : '-'}</span>
                         ${(entry.subSkills || []).map(id => { const s = getSkill(id); return s ? `<span class="skill-tag role-sub">▽ ${s.name}</span>` : ''; }).join('')}
                     </div>
                 </div>
