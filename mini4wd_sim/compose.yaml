@@ -1,0 +1,75 @@
+# compose.yaml ── 本番環境用 Docker Compose 定義（デプロイ要件3）
+#
+# サービス構成:
+#   web     : Django + Daphne（ASGIサーバー）
+#   redis   : Django Channels のチャンネルレイヤー（メッセージブローカー）
+#   nginx   : リバースプロキシ / 静的ファイル配信 / HTTPS終端
+#   certbot : Let's Encrypt証明書の自動更新（12時間ごとにrenewを試行。期限が近くない限り何もしない）
+#
+# 使い方の詳細は 同梱の「デプロイ手順書.txt」を参照。
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - internal
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # コンテナ内部での固定値（.envの値より優先される）
+      - DB_PATH=/app/data/db.sqlite3
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - sqlite_data:/app/data          # デプロイ要件3: DBの永続化
+      - static_volume:/app/staticfiles # Nginxへ静的ファイルを共有
+    depends_on:
+      - redis
+    networks:
+      - internal
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # 初回はconf.d-bootstrap（HTTPのみ）、証明書取得後はconf.d（HTTPS）を使う。
+      # デプロイ手順書の指示に従って読み込むディレクトリを切り替えること。
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - static_volume:/app/staticfiles:ro
+      - certbot_www:/var/www/certbot
+      - certbot_conf:/etc/letsencrypt:ro
+    depends_on:
+      - web
+    networks:
+      - internal
+
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    volumes:
+      - certbot_www:/var/www/certbot
+      - certbot_conf:/etc/letsencrypt
+    entrypoint: >
+      /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done;"
+    networks:
+      - internal
+
+volumes:
+  sqlite_data:
+  static_volume:
+  certbot_www:
+  certbot_conf:
+
+networks:
+  internal:
+    driver: bridge

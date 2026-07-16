@@ -27,6 +27,23 @@ ALLOWED_HOSTS = [
     h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()
 ]
 
+# ── 本番向けセキュリティ設定（デプロイ要件2） ──
+# Nginxをリバースプロキシとして前段に置く構成のため、CSRF_TRUSTED_ORIGINSと
+# SECURE_PROXY_SSL_HEADERを環境変数から設定できるようにする。
+# ローカル開発時（.envに未設定）は空リスト/従来どおりの挙動になり影響しない。
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
+]
+if _env_bool("DJANGO_BEHIND_HTTPS_PROXY", False):
+    # NginxがX-Forwarded-Proto: httpsを付与する構成の場合のみ有効化する。
+    # （ローカルのRedis疎通チェックと同様、環境変数が無ければ何もしない安全側の設計）
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+if not DEBUG:
+    # 本番(DEBUG=False)では、HTTPS経由のCookieのみを許可する。
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 # ── アプリケーション定義 ──
 INSTALLED_APPS = [
     # daphneを先頭に置くことで、開発用の `manage.py runserver` が
@@ -88,10 +105,14 @@ ASGI_APPLICATION = "config.asgi.application"
 
 # ── データベース ──
 # 学内コンテスト規模を想定し、開発既定値はSQLite。本番はPostgreSQL等への差し替えを推奨。
+# DB_PATHは本番のDocker環境で、永続化用ボリュームのパスを指すために追加した
+# （デプロイ要件3: コンテナ再起動でDBが消えないようにする）。未設定時は従来どおり
+# プロジェクト直下のdb.sqlite3を使うため、ローカル開発環境には影響しない。
+DB_PATH = os.environ.get("DB_PATH", str(BASE_DIR / "db.sqlite3"))
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": DB_PATH,
     }
 }
 
@@ -112,6 +133,10 @@ AXES_LOCKOUT_TEMPLATE = None     # デフォルトの簡易ロック画面を使
 AXES_VERBOSE = False
 AXES_USERNAME_FORM_FIELD = "name"  # カスタムUserモデルのUSERNAME_FIELD/ログインフォームに合わせる
 AXES_USERNAME_CALLABLE = None
+# Nginxをリバースプロキシとして前段に置くため、django-axesが実クライアントIPを
+# X-Forwarded-Forから正しく取得できるようにする（付け値1 = Nginxを1ホップ分信頼する）。
+AXES_IPWARE_PROXY_COUNT = 1
+AXES_IPWARE_META_PRECEDENCE_ORDER = ["HTTP_X_FORWARDED_FOR", "REMOTE_ADDR"]
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 4}},
