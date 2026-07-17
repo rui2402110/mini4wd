@@ -1,0 +1,102 @@
+デプロイ後手順書（運用引き継ぎ用）
+======================================
+対象: ミニ四駆シミュレーター 本番環境（AWS EC2 / Ubuntu Server）
+
+デプロイ完了後、継続的に必要となる運用作業をまとめています。
+
+
+【1. スーパーユーザー（管理画面ログイン用）の作成】
+  初回のみ実行してください。
+
+  cd /home/ubuntu/mini4wd_sim
+  docker compose exec web python manage.py createsuperuser
+
+  対話式でユーザー名・パスワードを設定します（本アプリはパスワードのみ認証の
+  カスタムUserモデルのため、"name" の入力を求められます）。
+  作成後 https://mini4wdsim.duckdns.org/admin/ からログインできます。
+
+
+【2. cleanup_old_rooms の定期実行（部屋の自動削除バッチ）】
+  設計書9-1のとおり、作成から一定時間（既定6時間・.envのROOM_STALE_HOURSで変更可）
+  が経過した待機中の部屋を毎日23:00に削除する想定です。
+  Dockerコンテナ内で実行する必要があるため、ホストのcrontabから
+  `docker compose exec` 経由で呼び出します。
+
+  1) ホストでcrontabを編集する
+       crontab -e
+
+  2) 以下の行を追記する（パスは実際の配置場所に合わせて書き換えること）
+       0 23 * * * cd /home/ubuntu/mini4wd_sim && /usr/bin/docker compose exec -T web python manage.py cleanup_old_rooms >> /home/ubuntu/mini4wd_sim/logs/cleanup_old_rooms.log 2>&1
+
+  3) ログ保存先ディレクトリを作成しておく
+       mkdir -p /home/ubuntu/mini4wd_sim/logs
+
+  ※ dockerコマンドの絶対パスは `which docker` で確認してください
+    （cronはPATHが通っていないことが多いため、絶対パス指定を推奨します）。
+
+
+【3. マスターデータ・実績データの追加/更新】
+  スキル・カラー・車種タイプや実績の内容を追加/変更した場合、以下を実行すると
+  反映されます（すでに投入済みのデータは上書き更新され、重複投入はされません）。
+
+    docker compose exec web python manage.py seed_master_data
+    docker compose exec web python manage.py seed_achievements
+
+  ※ entrypoint.sh により、コンテナ再起動のたびにも自動実行されるため、
+    通常は手動実行不要です。即座に反映させたい場合のみ上記を実行してください。
+
+
+【4. Let's Encrypt証明書の自動更新について】
+  compose.yaml の certbot-renew サービスが12時間ごとに更新チェックを行うよう
+  常駐しています（期限まで30日を切っていない場合は何もしません）。
+  追加の手動対応は基本的に不要ですが、証明書更新後はNginxの再読み込みが
+  別途必要です。以下のいずれかで定期的にリロードすることを推奨します。
+
+  ホストのcrontabに以下を追記する（毎日3時にリロード。証明書が更新されて
+  いない日は何も変化しないため無害です）。
+
+    0 3 * * * cd /home/ubuntu/mini4wd_sim && /usr/bin/docker compose exec nginx nginx -s reload >> /home/ubuntu/mini4wd_sim/logs/nginx_reload.log 2>&1
+
+  証明書の有効期限は以下で確認できます。
+    docker compose run --rm certbot certificates
+
+
+【5. データベース（SQLite）のバックアップ】
+  DBファイルは sqlite_data という名前付きDockerボリュームに保存されており、
+  `docker compose down` してもデータは消えません。
+  念のため定期バックアップを取る場合は以下のようにホストへコピーできます。
+
+    docker compose exec web sh -c "cp /app/data/db.sqlite3 /app/data/db.sqlite3.bak"
+    docker cp $(docker compose ps -q web):/app/data/db.sqlite3.bak ./backup_$(date +%Y%m%d).sqlite3
+
+
+【6. アプリケーションの更新（ソースコード更新時）】
+  ソースコードを更新した場合の反映手順です。
+
+    cd /home/ubuntu/mini4wd_sim
+    # (ここでソースコードを最新版に更新: git pull 等)
+    docker compose build web
+    docker compose up -d web
+    docker compose logs -f web   # migrate等が正常に完了したか確認
+
+  ※ Nginx設定(docker/nginx/conf.d/app.conf)やDockerfile/compose.yaml自体を
+    変更した場合は、該当サービスも作り直してください。
+      docker compose up -d --build
+
+
+【7. サーバー再起動時の自動復旧】
+  restart: unless-stopped をcompose.yamlの全サービスに設定済みのため、
+  EC2インスタンス自体を再起動した場合も、Dockerサービスが自動起動していれば
+  コンテナは自動的に立ち上がります。Docker自体の自動起動は通常デフォルトで
+  有効ですが、念のため以下で確認してください。
+
+    sudo systemctl is-enabled docker
+    # "enabled" と表示されればOK。"disabled" の場合は以下で有効化する
+    sudo systemctl enable docker
+
+
+【困ったときは】
+  ・全コンテナのログをまとめて確認:  docker compose logs -f
+  ・特定サービスだけ再起動:         docker compose restart web
+  ・ディスク容量確認（イメージ肥大化対策）: docker system df
+  ・不要な古いイメージの削除:        docker image prune -f

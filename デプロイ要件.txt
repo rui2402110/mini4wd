@@ -1,0 +1,154 @@
+デプロイ手順書
+======================================
+対象: ミニ四駆シミュレーター 本番環境（AWS EC2 / Ubuntu Server）
+ドメイン: mini4wdsim.duckdns.org
+サーバーIP: 3.218.32.232
+
+この手順書は、EC2への初回デプロイ（コンテナのビルド〜起動〜HTTPS化）を
+上から順に実行すれば完了するように構成しています。
+
+
+【0. 前提条件の確認】
+  ・DuckDNSの管理画面で mini4wdsim.duckdns.org が 3.218.32.232 を指すよう
+    設定済みであること（DuckDNSのupdate URLを叩く、または管理画面で確認）。
+  ・EC2のセキュリティグループで、以下のインバウンドを許可していること。
+      22   (SSH)      : 自分のIPからのみで可（推奨）
+      80   (HTTP)      : 0.0.0.0/0
+      443  (HTTPS)     : 0.0.0.0/0
+  ・EC2にSSHでログインできること。
+      ssh -i your-key.pem ubuntu@3.218.32.232
+
+
+【1. Docker / Docker Compose のインストール（Ubuntu Server）】
+  EC2にSSH接続した状態で実行する。
+
+  sudo apt-get update
+  sudo apt-get install -y ca-certificates curl gnupg
+  sudo install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  sudo chmod a+r /etc/apt/keyrings/docker.gpg
+  echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  sudo apt-get update
+  sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+  # sudoなしでdockerコマンドを使えるようにする（再ログインが必要）
+  sudo usermod -aG docker $USER
+  # 一度ログアウトし、再度SSH接続し直してください（グループ反映のため）
+
+  # インストール確認
+  docker --version
+  docker compose version
+
+
+【2. アプリケーションソースコードの配置】
+  ・システム本体のソースコード（mini4wd_sim一式）は別途管理されているものを、
+    EC2上の任意のディレクトリ（例: /home/ubuntu/mini4wd_sim）に配置してください。
+      例: git clone や scp 等で /home/ubuntu/mini4wd_sim に転送する。
+
+  ・その上に、本ZIP（デプロイ操作用ZIP）の中身を「上書きコピー」してください。
+    ZIPの中身は以下の構成です（配置後のパスも記載）。
+
+      Dockerfile                          → /home/ubuntu/mini4wd_sim/Dockerfile
+      compose.yaml                        → /home/ubuntu/mini4wd_sim/compose.yaml
+      .env.production.example             → /home/ubuntu/mini4wd_sim/.env.production.example
+      docker/entrypoint.sh                → /home/ubuntu/mini4wd_sim/docker/entrypoint.sh
+      docker/nginx/conf.d/app.conf        → /home/ubuntu/mini4wd_sim/docker/nginx/conf.d/app.conf
+      docker/nginx/conf.d-bootstrap/app.conf
+                                           → /home/ubuntu/mini4wd_sim/docker/nginx/conf.d-bootstrap/app.conf
+      config/settings.py                  → /home/ubuntu/mini4wd_sim/config/settings.py （上書き）
+
+  ・entrypoint.shに実行権限を付与する（Windows等からコピーすると権限が落ちることがあるため念のため）。
+      chmod +x /home/ubuntu/mini4wd_sim/docker/entrypoint.sh
+
+  ・作業ディレクトリへ移動する。
+      cd /home/ubuntu/mini4wd_sim
+
+
+【3. 環境変数(.env)の準備】
+  cp .env.production.example .env
+  nano .env
+
+  以下を必ず書き換えてください。
+    DJANGO_SECRET_KEY  … 下記コマンドで生成した値に置き換える
+        python3 -c "import secrets; print(secrets.token_urlsafe(50))"
+      （EC2にPython3が無い場合は `sudo apt-get install -y python3` で入ります。
+        ローカルPCで生成してコピーしても構いません。）
+
+  DJANGO_ALLOWED_HOSTS・DJANGO_CSRF_TRUSTED_ORIGINSはテンプレートの値
+  （mini4wdsim.duckdns.org）のままで問題ありません。ドメインを変更する場合のみ
+  あわせて書き換えてください。
+
+
+【4. 初回起動（HTTP経由でのブートストラップ）】
+  Let's Encryptの証明書がまだ無い状態でHTTPS設定を読み込むとNginxが起動に
+  失敗するため、まずはHTTP専用設定でサイトを立ち上げる。
+
+  # conf.d を空にし、bootstrap(HTTPのみ)の内容を一時的にconf.dへコピーする
+  mkdir -p docker/nginx/conf.d.ssl-backup
+  mv docker/nginx/conf.d/app.conf docker/nginx/conf.d.ssl-backup/app.conf
+  cp docker/nginx/conf.d-bootstrap/app.conf docker/nginx/conf.d/app.conf
+
+  # イメージのビルドとコンテナ起動
+  docker compose build
+  docker compose up -d redis web nginx
+
+  # 起動ログを確認（マイグレーション・collectstatic・マスターデータ投入が
+  # 自動実行される。エラーが出ていないか確認する）
+  docker compose logs -f web
+  # 確認できたら Ctrl+C でログ表示を終了（コンテナは動き続ける）
+
+  ブラウザで http://mini4wdsim.duckdns.org/ にアクセスし、ログイン画面が
+  表示されることを確認する。
+
+
+【5. Let's Encrypt 証明書の取得】
+  # メールアドレスは有効期限が近づいた際の通知先。適宜書き換えてください。
+  docker compose run --rm certbot certonly \
+    --webroot -w /var/www/certbot \
+    -d mini4wdsim.duckdns.org \
+    --email your-email@example.com \
+    --agree-tos --no-eff-email
+
+  「Congratulations!」と表示されれば成功です。
+  /etc/letsencrypt（Dockerボリューム certbot_conf）に証明書一式が保存されます。
+
+
+【6. HTTPS設定への切り替え】
+  # bootstrap設定を外し、本来のSSL設定に戻す
+  rm docker/nginx/conf.d/app.conf
+  mv docker/nginx/conf.d.ssl-backup/app.conf docker/nginx/conf.d/app.conf
+  rmdir docker/nginx/conf.d.ssl-backup
+
+  # certbotの自動更新サービス（certbot-renew）も合わせて起動する
+  docker compose up -d certbot-renew
+
+  # app.confファイルをhttps用のものに置き換え
+
+  # Nginxに新しい設定を反映
+  docker compose restart nginx
+
+  ブラウザで https://mini4wdsim.duckdns.org/ にアクセスし、鍵マーク（HTTPS）
+  付きで正常に表示されることを確認する。http://（80番）でアクセスした場合は
+  自動的にhttps://へリダイレクトされることも確認する。
+
+
+【7. 動作確認チェックリスト】
+  □ https://mini4wdsim.duckdns.org/ でトップページが表示される
+  □ 新規ユーザー名でログインでき、メニュー画面へ遷移する
+  □ 部屋を作成し、race.html （wss://経由のWebSocket）でメンバー一覧が表示される
+    （ブラウザの開発者ツール Network タブで wss:// 接続が101 Switching Protocols
+    になっていることを確認すると確実）
+  □ 管理画面 https://mini4wdsim.duckdns.org/admin/ にアクセスできる
+    （スーパーユーザーは未作成のため、次の「デプロイ後手順書.txt」の手順で作成する）
+
+
+【困ったときは】
+  ・コンテナの状態確認:   docker compose ps
+  ・ログ確認:            docker compose logs -f [web|nginx|redis|certbot|certbot-renew]
+  ・コンテナ再起動:      docker compose restart [サービス名]
+  ・全部作り直す:        docker compose down && docker compose up -d
+    （sqlite_data・static_volume・certbot_conf 等のボリュームは削除されないため
+      データは保持されます。完全に消したい場合のみ `docker compose down -v`）
